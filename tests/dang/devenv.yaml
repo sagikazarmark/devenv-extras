@@ -1,0 +1,10 @@
+inputs:
+  nixpkgs:
+    url: github:cachix/devenv-nixpkgs/rolling
+  devenv-extras:
+    url: github:sagikazarmark/devenv-extras
+    overlays:
+      - dang
+
+imports:
+  - devenv-extras/modules/devenv.nix

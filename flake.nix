@@ -1,0 +1,48 @@
+{
+  description = "Extra devenv modules and packages";
+
+  inputs = {
+    nixpkgs.url = "github:cachix/devenv-nixpkgs/rolling";
+  };
+
+  outputs =
+    { self, nixpkgs }:
+    let
+      supportedSystems = [
+        "aarch64-darwin"
+        "x86_64-darwin"
+        "x86_64-linux"
+        "aarch64-linux"
+      ];
+
+      forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
+      packagesFor = pkgs: import ./packages { inherit pkgs; };
+    in
+    {
+      overlays.dang = final: _prev: {
+        inherit (packagesFor final) dang;
+      };
+
+      overlays.sandbox-agent = final: _prev: {
+        inherit (packagesFor final) sandbox-agent;
+      };
+
+      overlays.default = self.overlays.sandbox-agent;
+
+      packages = forAllSystems (
+        system:
+        let
+          pkgs = import nixpkgs { inherit system; };
+          packages = packagesFor pkgs;
+        in
+        packages
+        // {
+          default = packages.sandbox-agent;
+        }
+      );
+
+      checks = forAllSystems (system: {
+        inherit (self.packages.${system}) dang sandbox-agent;
+      });
+    };
+}

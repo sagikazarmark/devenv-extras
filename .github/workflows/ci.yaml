@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  DEVENV_VERSION: v2.1.2
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@9280e7aca88deada44c930f1e2c78e21c3ae3edd # v31.7.0
+        with:
+          github_access_token: ${{ github.token }}
+
+      - name: Configure cachix
+        uses: cachix/cachix-action@0fc020193b5a1fa3ac4575aa3a7d3aa6a35435ad # v16
+        with:
+          name: devenv
+
+      - name: Install devenv
+        run: nix profile install github:cachix/devenv/${{ env.DEVENV_VERSION }}
+
+      - name: Run flake checks
+        run: nix flake check
+
+      - name: Run devenv tests
+        run: devenv test
