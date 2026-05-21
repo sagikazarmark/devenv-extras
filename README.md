@@ -16,8 +16,7 @@ inputs:
     url: github:sagikazarmark/devenv-extras
     # Add overlays if needed
     # overlays:
-    #   - dang
-    #   - sandbox-agent
+    #   - default
 
 imports:
   - extras/modules

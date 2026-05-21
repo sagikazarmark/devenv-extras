@@ -27,18 +27,14 @@
         inherit (packagesFor final) sandbox-agent;
       };
 
-      overlays.default = self.overlays.sandbox-agent;
+      overlays.default = final: _prev: packagesFor final;
 
       packages = forAllSystems (
         system:
         let
           pkgs = import nixpkgs { inherit system; };
-          packages = packagesFor pkgs;
         in
-        packages
-        // {
-          default = packages.sandbox-agent;
-        }
+        packagesFor pkgs
       );
 
       checks = forAllSystems (system: {
