@@ -14,6 +14,10 @@ inputs:
     url: github:cachix/devenv-nixpkgs/rolling
   extras:
     url: github:sagikazarmark/devenv-extras
+    # Add overlays if needed
+    # overlays:
+    #   - dang
+    #   - sandbox-agent
 
 imports:
   - extras/modules
@@ -25,7 +29,9 @@ Then enable the modules you need in `devenv.nix`:
 { ... }:
 
 {
-  foo.enable = true;
+  languages.dang.enable = true;
+  # dagger.enable = true;
+  # services.sandbox-agent.enable = true;
 }
 ```
 

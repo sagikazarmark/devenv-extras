@@ -23,19 +23,35 @@
     trap 'rm -rf "$tmp_root"' EXIT
 
     found=0
-    for fixture in "$repo_root"/tests/*; do
-      [ -d "$fixture" ] || continue
+    while IFS= read -r config; do
+      fixture="''${config%/devenv.nix}"
+      name="''${fixture#"$repo_root/tests/"}"
       found=1
 
-      name="$(basename "$fixture")"
       workdir="$tmp_root/$name"
 
       mkdir -p "$workdir"
       cp -R "$fixture"/. "$workdir"/
 
+      cat > "$workdir/devenv.yaml" <<'EOF'
+inputs:
+  nixpkgs:
+    url: github:cachix/devenv-nixpkgs/rolling
+  devenv-extras:
+    url: github:sagikazarmark/devenv-extras
+    overlays:
+      - dang
+      - sandbox-agent
+
+imports:
+  - devenv-extras/modules
+
+strict_ports: true
+EOF
+
       echo "==> testing $name"
       (cd "$workdir" && git init -q && devenv --override-input devenv-extras "path:$repo_root" test)
-    done
+    done < <(find "$repo_root/tests" -path "*/.devenv/*" -prune -o -name devenv.nix -type f -print | LC_ALL=C sort)
 
     if [ "$found" -eq 0 ]; then
       echo "No test fixtures found" >&2

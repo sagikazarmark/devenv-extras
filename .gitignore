@@ -1,4 +1,4 @@
 .devenv/
 .direnv/
 result
-tests/*/devenv.lock
+tests/**/devenv.lock

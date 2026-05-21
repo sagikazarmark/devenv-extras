@@ -12,7 +12,7 @@ let
     };
 
     modules = [
-      ../../modules/devenv.nix
+      ../../modules/default.nix
       (
         { lib, pkgs, ... }:
         {
