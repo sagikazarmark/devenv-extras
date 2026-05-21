@@ -1,1 +1,7 @@
-import ./default.nix
+{
+  imports = [
+    ./default.nix
+  ];
+
+  cachix.pull = [ "devenv-extras" ];
+}
