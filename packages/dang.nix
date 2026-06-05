@@ -6,16 +6,16 @@
 
 buildGoModule rec {
   pname = "dang";
-  version = "ad5bca2669a9dcd9028e25e3b73b09e99893c1af";
+  version = "8667c4f95dc38af6c71e4e5480cd6b9bacb92afe";
 
   src = fetchFromGitHub {
     owner = "vito";
     repo = "dang";
     rev = version;
-    hash = "sha256-InZ6qTjmO77GojlNzSHY12XM4sj74xBgPC1pI7nhjKA=";
+    hash = "sha256-XwTCliI6YftA2YU3/Pj0D/xt5ApOyTvQlOvrZKvkdC4=";
   };
 
-  vendorHash = "sha256-yV6ubM93VyXTVRuqmPAluj+HaCOSnwk7FGmpSG33l5s=";
+  vendorHash = "sha256-t/Lik2quiLorvi+BA44X9I46/XRNkWbkViDEDzn9n0M=";
   proxyVendor = true;
 
   doCheck = false;
