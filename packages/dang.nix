@@ -6,13 +6,13 @@
 
 buildGoModule rec {
   pname = "dang";
-  version = "3252afa462954365236d495b107ad7a25cf4f326";
+  version = "076d1827677e81ffd7e2d509d9733e25e3e5fc67";
 
   src = fetchFromGitHub {
     owner = "vito";
     repo = "dang";
     rev = version;
-    hash = "sha256-oJpCH/POjkuYcvBHXRhjIR5h1xnRiTux10SG34eKto8=";
+    hash = "sha256-OCykNa7d71GVtYK9n7e0feHtszVMRjJUFbU55Bg38ac=";
   };
 
   vendorHash = "sha256-t/Lik2quiLorvi+BA44X9I46/XRNkWbkViDEDzn9n0M=";
