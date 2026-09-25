@@ -8,22 +8,21 @@ on:
 permissions:
   contents: read
 
-env:
-  DEVENV_VERSION: v2.1.2
-
 jobs:
   test:
-    name: Test (${{ matrix.system }})
+    name: Test (${{ matrix.devenv }} on ${{ matrix.system }})
     runs-on: ${{ matrix.runner }}
 
     strategy:
       fail-fast: false
       matrix:
+        devenv: ["v2.2.2", "v2.3.1", "v2.4.0"]
+        system: [x86_64-linux, aarch64-linux, aarch64-darwin]
         include:
           - system: x86_64-linux
-            runner: ubuntu-24.04
+            runner: ubuntu-26.04
           - system: aarch64-linux
-            runner: ubuntu-24.04-arm
+            runner: ubuntu-26.04-arm
           - system: aarch64-darwin
             runner: macos-15
 
@@ -45,7 +44,7 @@ jobs:
           skipPush: ${{ github.event_name != 'push' || github.ref != 'refs/heads/main' }}
 
       - name: Install devenv
-        run: nix profile install github:cachix/devenv/${{ env.DEVENV_VERSION }}
+        run: nix profile install github:cachix/devenv/${{ matrix.devenv }}
 
       - name: Run flake checks
         run: nix flake check

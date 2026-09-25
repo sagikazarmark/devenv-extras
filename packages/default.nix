@@ -1,6 +1,6 @@
 { pkgs }:
 
 {
-  dang = pkgs.callPackage ./dang.nix { };
+  dang = pkgs.callPackage ../modules/languages/dang/package.nix { };
   sandbox-agent = pkgs.callPackage ./sandbox-agent.nix { };
 }

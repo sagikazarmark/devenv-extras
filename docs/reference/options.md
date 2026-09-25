@@ -4,6 +4,8 @@
 
 ## dagger.enable
 
+
+
 Whether to enable Dagger.
 
 
@@ -56,6 +58,101 @@ dagger.packages.${pkgs.stdenv.hostPlatform.system}.dagger
 
 
 
+## dagger.dang.enable
+
+Whether to enable Dang support for Dagger.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [modules/integrations/dagger.nix](../../modules/integrations/dagger.nix)
+
+
+
+## dagger.engine
+
+
+
+The Dagger engine to use, exported as DAGGER_ENGINE. Supported patterns:
+
+ - Dagger Cloud: ` cloud `
+ - OCI image: ` image://IMAGE ` or ` image+RUNTIME://IMAGE `
+ - Running container: ` container://NAME ` or ` container+RUNTIME://NAME `
+ - Direct connection: ` tcp://HOST:PORT ` (no authentication),
+   ` tls://HOST[:PORT] `, ` ssh://[USER@]HOST[:PORT] `, ` kube-pod://POD `, or ` unix://PATH `
+ - Legacy Docker: ` docker-image://IMAGE ` or ` docker-container://NAME `
+
+RUNTIME can be ` docker `, ` apple `, ` podman `, ` finch `, or ` nerdctl `.
+
+
+
+*Type:*
+null or string matching the pattern cloud|((image|container)(\[+](docker|apple|podman|finch|nerdctl))?|tcp|tls|ssh|kube-pod|unix|docker-image|docker-container)://.+
+
+
+
+*Default:*
+
+```nix
+null
+```
+
+
+
+*Example:*
+
+```nix
+"cloud"
+```
+
+*Declared by:*
+ - [modules/integrations/dagger.nix](../../modules/integrations/dagger.nix)
+
+
+
+## dagger.version
+
+
+
+The Dagger release to use, exported as DAGGER_X_RELEASE.
+
+
+
+*Type:*
+null or string
+
+
+
+*Default:*
+
+```nix
+null
+```
+
+*Declared by:*
+ - [modules/integrations/dagger.nix](../../modules/integrations/dagger.nix)
+
+
+
 ## languages.dang.enable
 
 
@@ -84,7 +181,7 @@ true
 ```
 
 *Declared by:*
- - [modules/languages/dang.nix](../../modules/languages/dang.nix)
+ - [modules/languages/dang](../../modules/languages/dang)
 
 
 
@@ -104,11 +201,11 @@ package
 *Default:*
 
 ```nix
-pkgs.dang
+pkgs.dang or (pkgs.callPackage ./package.nix { })
 ```
 
 *Declared by:*
- - [modules/languages/dang.nix](../../modules/languages/dang.nix)
+ - [modules/languages/dang](../../modules/languages/dang)
 
 
 
@@ -397,5 +494,377 @@ null
 
 *Declared by:*
  - [modules/services/sandbox-agent.nix](../../modules/services/sandbox-agent.nix)
+
+
+
+## vale.enable
+
+
+
+Whether to enable Vale prose linter.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [modules/integrations/vale.nix](../../modules/integrations/vale.nix)
+
+
+
+## vale.package
+
+
+
+The vale package to use.
+
+
+
+*Type:*
+package
+
+
+
+*Default:*
+
+```nix
+pkgs.vale
+```
+
+*Declared by:*
+ - [modules/integrations/vale.nix](../../modules/integrations/vale.nix)
+
+
+
+## vale.config.copyMode
+
+
+
+How to materialize settings as a configuration file. Has no effect
+when settings is null. ` copy ` overwrites a writable file on shell
+entry, and ` symlink ` links it to the read-only Nix store. Starter
+configurations always default to seed mode in the ` files ` module.
+
+
+
+*Type:*
+one of “copy”, “symlink”
+
+
+
+*Default:*
+
+```nix
+"copy"
+```
+
+*Declared by:*
+ - [modules/integrations/vale.nix](../../modules/integrations/vale.nix)
+
+
+
+## vale.config.file
+
+
+
+Path to the Vale configuration file, absolute or relative to the devenv
+root. Null leaves Vale’s normal configuration discovery in
+effect. A path is exported as ` VALE_CONFIG_PATH ` and passed to
+the git hook and sync task. With settings, this is also the generated
+file’s location and must be project-relative and nonempty. The selected
+path refers to the project file in every copy mode, not its store source.
+With both file and settings null, a starter is seeded to ` .vale.ini `
+independently of config selection. This can take precedence over a
+configuration discovered in a parent directory.
+
+
+
+*Type:*
+null or non-empty string
+
+
+
+*Default:*
+
+```nix
+if config.vale.config.settings == null then null else ".vale.ini"
+```
+
+
+
+*Example:*
+
+```nix
+"docs/.vale.ini"
+```
+
+*Declared by:*
+ - [modules/integrations/vale.nix](../../modules/integrations/vale.nix)
+
+
+
+## vale.config.settings
+
+
+
+Contents of the Vale configuration file. Put global keys such as
+` StylesPath ` and ` Packages ` in ` globalSection `, and file patterns in
+` sections `. Values may be scalars (including strings) or nonempty
+lists, which are rendered as comma-separated values. For example,
+` Packages = [ "Microsoft" "./vale-local" ] ` becomes
+` Packages=Microsoft, ./vale-local `.
+
+When set, devenv generates a writable copy on each shell entry, with
+a header identifying devenv.nix as the source of truth. Commit the
+output for contributors who do not use devenv.
+
+When both settings and file are null, devenv seeds ` .vale.ini ` with
+the Vale quickstart’s Microsoft and Vale styles for Markdown. The
+file uses ` files.".vale.ini".copyMode = "seed" `, preserving existing
+regular files and later edits. An explicit file without settings
+is left untouched. The starter omits ` StylesPath ` to use devenv’s
+styles directory. Run ` vale sync ` or enable ` vale.sync.enable ` to
+download its packages before linting.
+
+Omit
+` StylesPath ` to use the directory supplied through ` VALE_STYLES_PATH `;
+outside devenv, Vale then uses its normal user-level styles directory.
+
+
+
+*Type:*
+null or (submodule)
+
+
+
+*Default:*
+
+```nix
+null
+```
+
+
+
+*Example:*
+
+```nix
+{
+  globalSection = {
+    MinAlertLevel = "suggestion";
+    Packages = [ "Microsoft" "./vale-local" ];
+  };
+  sections."*.md".BasedOnStyles = "Vale, Microsoft";
+}
+
+```
+
+*Declared by:*
+ - [modules/integrations/vale.nix](../../modules/integrations/vale.nix)
+
+
+
+## vale.config.settings.globalSection
+
+
+
+global section of an INI file (attrs of INI atom (null, bool, int, float or string) or a non-empty list of them)
+
+
+
+*Type:*
+section of an INI file (attrs of INI atom (null, bool, int, float or string) or a non-empty list of them)
+
+
+
+*Default:*
+
+```nix
+{ }
+```
+
+*Declared by:*
+ - [modules/integrations/vale.nix](../../modules/integrations/vale.nix)
+
+
+
+## vale.config.settings.sections
+
+
+
+attribute set of section of an INI file (attrs of INI atom (null, bool, int, float or string) or a non-empty list of them)
+
+
+
+*Type:*
+attribute set of section of an INI file (attrs of INI atom (null, bool, int, float or string) or a non-empty list of them)
+
+
+
+*Default:*
+
+```nix
+{ }
+```
+
+*Declared by:*
+ - [modules/integrations/vale.nix](../../modules/integrations/vale.nix)
+
+
+
+## vale.lsp.enable
+
+
+
+Whether to enable Vale language server.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+true
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [modules/integrations/vale.nix](../../modules/integrations/vale.nix)
+
+
+
+## vale.lsp.package
+
+
+
+The vale-ls package to use.
+
+
+
+*Type:*
+package
+
+
+
+*Default:*
+
+```nix
+pkgs.vale-ls
+```
+
+*Declared by:*
+ - [modules/integrations/vale.nix](../../modules/integrations/vale.nix)
+
+
+
+## vale.stylesPath
+
+
+
+Default styles directory, exported as ` VALE_STYLES_PATH ` and created
+on shell entry. Relative paths are resolved from the devenv root.
+An INI ` StylesPath ` takes precedence, including as the sync destination.
+Omit that INI key to download packages here. Custom styles and
+vocabularies can be installed alongside downloads by listing a local
+directory in the INI ` Packages ` key.
+
+
+
+*Type:*
+non-empty string
+
+
+
+*Default:*
+
+```nix
+"${config.devenv.state}/vale/styles"
+```
+
+*Declared by:*
+ - [modules/integrations/vale.nix](../../modules/integrations/vale.nix)
+
+
+
+## vale.sync.enable
+
+
+
+Whether to enable vale sync during devenv initialization.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [modules/integrations/vale.nix](../../modules/integrations/vale.nix)
+
+
+
+## vale.sync.arguments
+
+
+
+Additional command-line arguments passed to vale sync.
+
+
+
+*Type:*
+list of string
+
+
+
+*Default:*
+
+```nix
+[ ]
+```
+
+*Declared by:*
+ - [modules/integrations/vale.nix](../../modules/integrations/vale.nix)
 
 

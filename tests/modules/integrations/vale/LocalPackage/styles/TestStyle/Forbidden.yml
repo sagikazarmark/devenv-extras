@@ -1,0 +1,7 @@
+extends: existence
+message: "Do not use '%s'."
+level: error
+vocab: true
+tokens:
+  - BADWORD
+  - GOODWORD

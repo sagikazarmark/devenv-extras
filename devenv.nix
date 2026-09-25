@@ -33,7 +33,8 @@
       mkdir -p "$workdir"
       cp -R "$fixture"/. "$workdir"/
 
-      cat > "$workdir/devenv.yaml" <<'EOF'
+      if [ ! -f "$workdir/devenv.yaml" ]; then
+        cat > "$workdir/devenv.yaml" <<'EOF'
 inputs:
   nixpkgs:
     url: github:cachix/devenv-nixpkgs/rolling
@@ -48,6 +49,7 @@ imports:
 
 strict_ports: true
 EOF
+      fi
 
       echo "==> testing $name"
       (cd "$workdir" && git init -q && devenv --override-input devenv-extras "path:$repo_root" test)
