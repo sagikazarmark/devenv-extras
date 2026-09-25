@@ -30,6 +30,36 @@ let
             visible = false;
           };
 
+          options.files = lib.mkOption {
+            type = lib.types.attrsOf lib.types.anything;
+            default = { };
+            visible = false;
+          };
+
+          options.git-hooks = lib.mkOption {
+            type = lib.types.attrsOf lib.types.anything;
+            default = { };
+            visible = false;
+          };
+
+          options.tasks = lib.mkOption {
+            type = lib.types.attrsOf lib.types.anything;
+            default = { };
+            visible = false;
+          };
+
+          options.env = lib.mkOption {
+            type = lib.types.attrsOf lib.types.anything;
+            default = { };
+            visible = false;
+          };
+
+          options.assertions = lib.mkOption {
+            type = lib.types.listOf lib.types.anything;
+            default = [ ];
+            visible = false;
+          };
+
           options.processes = lib.mkOption {
             type = lib.types.attrsOf (
               lib.types.submodule (
@@ -95,6 +125,11 @@ let
     "lib"
     "packages"
     "processes"
+    "files"
+    "git-hooks"
+    "tasks"
+    "env"
+    "assertions"
   ];
 
   rewriteDeclaration = declaration:
