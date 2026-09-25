@@ -4,6 +4,8 @@
 
 ## dagger.enable
 
+
+
 Whether to enable Dagger.
 
 
@@ -49,6 +51,101 @@ package
 
 ```nix
 dagger.packages.${pkgs.stdenv.hostPlatform.system}.dagger
+```
+
+*Declared by:*
+ - [modules/integrations/dagger.nix](../../modules/integrations/dagger.nix)
+
+
+
+## dagger.dang.enable
+
+Whether to enable Dang support for Dagger.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [modules/integrations/dagger.nix](../../modules/integrations/dagger.nix)
+
+
+
+## dagger.engine
+
+
+
+The Dagger engine to use, exported as DAGGER_ENGINE. Supported patterns:
+
+ - Dagger Cloud: ` cloud `
+ - OCI image: ` image://IMAGE ` or ` image+RUNTIME://IMAGE `
+ - Running container: ` container://NAME ` or ` container+RUNTIME://NAME `
+ - Direct connection: ` tcp://HOST:PORT ` (no authentication),
+   ` tls://HOST[:PORT] `, ` ssh://[USER@]HOST[:PORT] `, ` kube-pod://POD `, or ` unix://PATH `
+ - Legacy Docker: ` docker-image://IMAGE ` or ` docker-container://NAME `
+
+RUNTIME can be ` docker `, ` apple `, ` podman `, ` finch `, or ` nerdctl `.
+
+
+
+*Type:*
+null or string matching the pattern cloud|((image|container)(\[+](docker|apple|podman|finch|nerdctl))?|tcp|tls|ssh|kube-pod|unix|docker-image|docker-container)://.+
+
+
+
+*Default:*
+
+```nix
+null
+```
+
+
+
+*Example:*
+
+```nix
+"cloud"
+```
+
+*Declared by:*
+ - [modules/integrations/dagger.nix](../../modules/integrations/dagger.nix)
+
+
+
+## dagger.version
+
+
+
+The Dagger release to use, exported as DAGGER_X_RELEASE.
+
+
+
+*Type:*
+null or string
+
+
+
+*Default:*
+
+```nix
+null
 ```
 
 *Declared by:*
