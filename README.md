@@ -34,6 +34,13 @@ Then enable the modules you need in `devenv.nix`:
 }
 ```
 
+Dang works without an overlay: it uses `pkgs.dang` when available and otherwise
+builds the bundled package. Override `languages.dang.package` to choose a different
+package explicitly.
+
+If you only need modules that do not require an overlay, you can also add
+`flake: false` to the `extras` input.
+
 ## Options
 
 See the generated option reference: [docs/reference/options.md](docs/reference/options.md).

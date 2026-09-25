@@ -1,6 +1,6 @@
 {
   imports = [
-    ./languages/dang.nix
+    ./languages/dang
     ./integrations/dagger.nix
     ./services/sandbox-agent.nix
   ];

@@ -84,7 +84,7 @@ true
 ```
 
 *Declared by:*
- - [modules/languages/dang.nix](../../modules/languages/dang.nix)
+ - [modules/languages/dang](../../modules/languages/dang)
 
 
 
@@ -104,11 +104,11 @@ package
 *Default:*
 
 ```nix
-pkgs.dang
+pkgs.dang or (pkgs.callPackage ./package.nix { })
 ```
 
 *Declared by:*
- - [modules/languages/dang.nix](../../modules/languages/dang.nix)
+ - [modules/languages/dang](../../modules/languages/dang)
 
 
 

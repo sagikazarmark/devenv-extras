@@ -14,8 +14,8 @@ in
 
     package = lib.mkOption {
       type = lib.types.package;
-      default = pkgs.dang;
-      defaultText = lib.literalExpression "pkgs.dang";
+      default = pkgs.dang or (pkgs.callPackage ./package.nix { });
+      defaultText = lib.literalExpression "pkgs.dang or (pkgs.callPackage ./package.nix { })";
       description = "The Dang package to use.";
     };
   };
