@@ -424,7 +424,8 @@ string
 
 
 The base port the Ollama HTTP server listens on.
-The actual port is allocated by devenv and may differ; ` OLLAMA_HOST ` points to it.
+The actual port is allocated by devenv and may differ;
+` OLLAMA_HOST ` and ` OLLAMA_BASE_URL ` point to it.
 
 
 

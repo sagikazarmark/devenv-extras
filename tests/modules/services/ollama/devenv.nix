@@ -22,6 +22,10 @@ in
       message = "OLLAMA_HOST should point clients at the allocated port.";
     }
     {
+      assertion = config.env.OLLAMA_BASE_URL == "http://127.0.0.1:${port}/v1";
+      message = "OLLAMA_BASE_URL should point clients at the OpenAI-compatible endpoint.";
+    }
+    {
       assertion = !(config.tasks ? "devenv:ollama:load-models");
       message = "The model loader task should only exist when models are declared.";
     }

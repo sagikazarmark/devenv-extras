@@ -28,6 +28,10 @@ in
       message = "Clients should connect to loopback when the server binds a wildcard address.";
     }
     {
+      assertion = config.env.OLLAMA_BASE_URL == "http://127.0.0.1:${port}/v1";
+      message = "OLLAMA_BASE_URL should connect to loopback when the server binds a wildcard address.";
+    }
+    {
       assertion = config.processes.ollama.env.OLLAMA_KEEP_ALIVE == "1m";
       message = "Extra environment variables should be passed to the server process.";
     }

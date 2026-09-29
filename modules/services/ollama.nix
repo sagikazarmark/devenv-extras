@@ -58,7 +58,8 @@ in
       default = 11434;
       description = ''
         The base port the Ollama HTTP server listens on.
-        The actual port is allocated by devenv and may differ; `OLLAMA_HOST` points to it.
+        The actual port is allocated by devenv and may differ;
+        `OLLAMA_HOST` and `OLLAMA_BASE_URL` point to it.
       '';
     };
 
@@ -107,8 +108,13 @@ in
   config = lib.mkIf cfg.enable {
     packages = [ cfg.package ];
 
-    # Point the ollama CLI (and other clients) at the managed server.
-    env.OLLAMA_HOST = "${connectHost}:${toString port}";
+    env = {
+      # Point the ollama CLI (and other clients) at the managed server.
+      OLLAMA_HOST = "${connectHost}:${toString port}";
+
+      # OpenAI-compatible endpoint, read by clients such as Pydantic AI.
+      OLLAMA_BASE_URL = "http://${connectHost}:${toString port}/v1";
+    };
 
     processes.ollama = {
       exec = "exec ${ollama} serve";

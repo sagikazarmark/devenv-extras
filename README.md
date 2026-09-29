@@ -157,7 +157,9 @@ services.ollama = {
 The server port is allocated from `services.ollama.port` (default `11434`), so it
 does not clash with an Ollama instance already running on the machine. The shell
 exports `OLLAMA_HOST` pointing at the managed server, so `ollama run` and other
-clients use it without extra configuration.
+clients use it without extra configuration. It also exports `OLLAMA_BASE_URL` with
+the OpenAI-compatible `/v1` endpoint, which clients such as Pydantic AI's `ollama:`
+models read.
 
 Models declared in `loadModels` are pulled by the `devenv:ollama:load-models` task once
 the server is ready; models that are already present are skipped. Models are stored
