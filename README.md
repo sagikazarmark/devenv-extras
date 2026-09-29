@@ -30,6 +30,7 @@ Then enable the modules you need in `devenv.nix`:
 {
   languages.dang.enable = true;
   # dagger.enable = true;
+  # services.ollama.enable = true;
   # services.sandbox-agent.enable = true;
 }
 ```
@@ -141,6 +142,31 @@ and why multiple search paths or symlink trees are not equivalent to this layout
 
 Disable the language server with
 `vale.lsp.enable = false`, or the hook with `git-hooks.hooks.vale.enable = false`.
+
+### Ollama
+
+Run an [Ollama](https://ollama.com/) server with `devenv up`:
+
+```nix
+services.ollama = {
+  enable = true;
+  loadModels = [ "gemma3" ];
+};
+```
+
+The server port is allocated from `services.ollama.port` (default `11434`), so it
+does not clash with an Ollama instance already running on the machine. The shell
+exports `OLLAMA_HOST` pointing at the managed server, so `ollama run` and other
+clients use it without extra configuration.
+
+Models declared in `loadModels` are pulled by the `devenv:ollama:load-models` task once
+the server is ready; models that are already present are skipped. Models are stored
+in `.devenv/state/ollama/models` by default. Point `services.ollama.modelsDir` at an
+absolute path, such as your `~/.ollama/models` directory, to share downloads across
+projects.
+
+For GPU acceleration on Linux, set `services.ollama.package` to `pkgs.ollama-cuda`,
+`pkgs.ollama-rocm` or `pkgs.ollama-vulkan`. On macOS, `pkgs.ollama` uses Metal.
 
 ### Reference
 

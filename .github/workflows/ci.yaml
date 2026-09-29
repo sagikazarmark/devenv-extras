@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        devenv: ["v2.2.2", "v2.3.1", "v2.4.0"]
+        devenv: ["v2.3.2", "v2.4.0"]
         system: [x86_64-linux, aarch64-linux, aarch64-darwin]
         include:
           - system: x86_64-linux
