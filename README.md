@@ -30,6 +30,7 @@ Then enable the modules you need in `devenv.nix`:
 {
   languages.dang.enable = true;
   # dagger.enable = true;
+  # services.litellm.enable = true;
   # services.ollama.enable = true;
   # services.sandbox-agent.enable = true;
 }
@@ -169,6 +170,50 @@ projects.
 
 For GPU acceleration on Linux, set `services.ollama.package` to `pkgs.ollama-cuda`,
 `pkgs.ollama-rocm` or `pkgs.ollama-vulkan`. On macOS, `pkgs.ollama` uses Metal.
+
+### LiteLLM
+
+Run a [LiteLLM](https://docs.litellm.ai/) proxy with `devenv up`:
+
+```nix
+services.litellm = {
+  enable = true;
+  settings.model_list = [
+    {
+      model_name = "claude-sonnet";
+      litellm_params = {
+        model = "anthropic/claude-sonnet-4-5";
+        api_key = "os.environ/ANTHROPIC_API_KEY";
+      };
+    }
+  ];
+};
+```
+
+`services.litellm.settings` is rendered to the proxy's
+[config file](https://docs.litellm.ai/docs/proxy/configs). The server port is
+allocated from `services.litellm.port` (default `4000`). The shell exports
+`LITELLM_PROXY_URL` (read by the `litellm-proxy` CLI) and `LITELLM_PROXY_API_BASE`
+(read by the LiteLLM SDK for `litellm_proxy/` models) pointing at the managed
+server. Telemetry is disabled by default.
+
+When `services.ollama` is enabled as well, LiteLLM routes `ollama/<model>` to the
+managed Ollama server and starts after Ollama is ready:
+
+```nix
+services.ollama = {
+  enable = true;
+  loadModels = [ "gemma3" ];
+};
+
+services.litellm.enable = true;
+```
+
+Models in `services.ollama.loadModels` are listed explicitly so clients discover
+them through `/v1/models`; any other pulled model is reachable through a wildcard
+route. Change the prefix with `services.litellm.ollama.prefix`, the listed models
+with `services.litellm.ollama.models`, or disable the integration with
+`services.litellm.ollama.enable = false`.
 
 ### Reference
 

@@ -209,6 +209,420 @@ pkgs.dang or (pkgs.callPackage ./package.nix { })
 
 
 
+## services.litellm.enable
+
+
+
+Whether to enable LiteLLM proxy server.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [modules/services/litellm.nix](../../modules/services/litellm.nix)
+
+
+
+## services.litellm.package
+
+
+
+Which package of LiteLLM to use.
+
+
+
+*Type:*
+package
+
+
+
+*Default:*
+
+```nix
+pkgs.litellm
+```
+
+*Declared by:*
+ - [modules/services/litellm.nix](../../modules/services/litellm.nix)
+
+
+
+## services.litellm.environmentVariables
+
+
+
+Additional environment variables for the LiteLLM server process.
+Telemetry is disabled by default; these variables take precedence.
+
+
+
+*Type:*
+attribute set of string
+
+
+
+*Default:*
+
+```nix
+{ }
+```
+
+
+
+*Example:*
+
+```nix
+{
+  LITELLM_LOG = "DEBUG";
+}
+```
+
+*Declared by:*
+ - [modules/services/litellm.nix](../../modules/services/litellm.nix)
+
+
+
+## services.litellm.host
+
+
+
+The host address the LiteLLM HTTP server listens on.
+
+
+
+*Type:*
+string
+
+
+
+*Default:*
+
+```nix
+"127.0.0.1"
+```
+
+
+
+*Example:*
+
+```nix
+"0.0.0.0"
+```
+
+*Declared by:*
+ - [modules/services/litellm.nix](../../modules/services/litellm.nix)
+
+
+
+## services.litellm.ollama.enable
+
+
+
+Whether to route models to the Ollama server managed by ` services.ollama `.
+
+Requests for ` <prefix><model> ` (such as ` ollama/gemma3 `) are forwarded
+to the Ollama server, and LiteLLM starts after Ollama is ready.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+config.services.ollama.enable
+```
+
+*Declared by:*
+ - [modules/services/litellm.nix](../../modules/services/litellm.nix)
+
+
+
+## services.litellm.ollama.models
+
+
+
+Ollama models listed explicitly in the proxy’s model list,
+so that clients discover them through ` /v1/models `.
+Other models are still routed to Ollama through a wildcard entry.
+
+
+
+*Type:*
+list of string
+
+
+
+*Default:*
+
+```nix
+config.services.ollama.loadModels
+```
+
+*Declared by:*
+ - [modules/services/litellm.nix](../../modules/services/litellm.nix)
+
+
+
+## services.litellm.ollama.prefix
+
+
+
+The prefix of model names routed to Ollama.
+
+
+
+*Type:*
+string
+
+
+
+*Default:*
+
+```nix
+"ollama/"
+```
+
+*Declared by:*
+ - [modules/services/litellm.nix](../../modules/services/litellm.nix)
+
+
+
+## services.litellm.port
+
+
+
+The base port the LiteLLM HTTP server listens on.
+The actual port is allocated by devenv and may differ;
+` LITELLM_PROXY_URL ` and ` LITELLM_PROXY_API_BASE ` point to it.
+
+
+
+*Type:*
+16 bit unsigned integer; between 0 and 65535 (both inclusive)
+
+
+
+*Default:*
+
+```nix
+4000
+```
+
+*Declared by:*
+ - [modules/services/litellm.nix](../../modules/services/litellm.nix)
+
+
+
+## services.litellm.settings
+
+
+
+LiteLLM proxy configuration, rendered to the YAML file passed to ` --config `.
+See [https://docs.litellm.ai/docs/proxy/configs](https://docs.litellm.ai/docs/proxy/configs) for available settings.
+
+
+
+*Type:*
+open submodule of (YAML 1.1 value)
+
+
+
+*Default:*
+
+```nix
+{ }
+```
+
+
+
+*Example:*
+
+```nix
+{
+  model_list = [
+    {
+      model_name = "claude-sonnet";
+      litellm_params = {
+        model = "anthropic/claude-sonnet-4-5";
+        api_key = "os.environ/ANTHROPIC_API_KEY";
+      };
+    }
+  ];
+}
+
+```
+
+*Declared by:*
+ - [modules/services/litellm.nix](../../modules/services/litellm.nix)
+
+
+
+## services.litellm.settings.environment_variables
+
+
+
+Environment variables LiteLLM sets for itself on startup.
+
+
+
+*Type:*
+YAML 1.1 value
+
+
+
+*Default:*
+
+```nix
+{ }
+```
+
+*Declared by:*
+ - [modules/services/litellm.nix](../../modules/services/litellm.nix)
+
+
+
+## services.litellm.settings.general_settings
+
+
+
+LiteLLM server settings.
+
+
+
+*Type:*
+YAML 1.1 value
+
+
+
+*Default:*
+
+```nix
+{ }
+```
+
+*Declared by:*
+ - [modules/services/litellm.nix](../../modules/services/litellm.nix)
+
+
+
+## services.litellm.settings.litellm_settings
+
+
+
+LiteLLM module settings.
+
+
+
+*Type:*
+YAML 1.1 value
+
+
+
+*Default:*
+
+```nix
+{ }
+```
+
+*Declared by:*
+ - [modules/services/litellm.nix](../../modules/services/litellm.nix)
+
+
+
+## services.litellm.settings.model_list
+
+
+
+Models served by the proxy, with model-specific configuration.
+
+
+
+*Type:*
+list of (YAML 1.1 value)
+
+
+
+*Default:*
+
+```nix
+[ ]
+```
+
+*Declared by:*
+ - [modules/services/litellm.nix](../../modules/services/litellm.nix)
+
+
+
+## services.litellm.settings.router_settings
+
+
+
+LiteLLM router settings.
+
+
+
+*Type:*
+YAML 1.1 value
+
+
+
+*Default:*
+
+```nix
+{ }
+```
+
+*Declared by:*
+ - [modules/services/litellm.nix](../../modules/services/litellm.nix)
+
+
+
+## services.litellm.stateDir
+
+
+
+The directory LiteLLM stores runtime files (such as the admin UI) in.
+
+
+
+*Type:*
+string
+
+
+
+*Default:*
+
+```nix
+"${config.devenv.state}/litellm"
+```
+
+*Declared by:*
+ - [modules/services/litellm.nix](../../modules/services/litellm.nix)
+
+
+
 ## services.ollama.enable
 
 
