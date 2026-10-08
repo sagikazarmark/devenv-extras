@@ -9,6 +9,7 @@ let
   evaluated = lib.evalModules {
     specialArgs = {
       pkgs = docsPkgs;
+      multiverse = { };
     };
 
     modules = [

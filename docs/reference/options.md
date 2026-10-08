@@ -153,6 +153,345 @@ null
 
 
 
+## dioxus.enable
+
+
+
+Whether to enable the Dioxus CLI (dx).
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [modules/integrations/dioxus.nix](../../modules/integrations/dioxus.nix)
+
+
+
+## dioxus.package
+
+
+
+The dioxus-cli package. Setting it overrides ` version `.
+
+
+
+*Type:*
+package
+
+
+
+*Default:*
+` dioxus-cli ` at ` version `, or ` pkgs.dioxus-cli `
+
+*Declared by:*
+ - [modules/integrations/dioxus.nix](../../modules/integrations/dioxus.nix)
+
+
+
+## dioxus.cargoLock
+
+
+
+The Cargo.lock to read the dioxus and wasm-bindgen versions from.
+When null, Cargo.lock at the project root is used if it exists.
+
+
+
+*Type:*
+null or absolute path
+
+
+
+*Default:*
+
+```nix
+null
+```
+
+*Declared by:*
+ - [modules/integrations/dioxus.nix](../../modules/integrations/dioxus.nix)
+
+
+
+## dioxus.esbuild.enable
+
+
+
+Whether to enable esbuild, which dx uses to minify JavaScript. The Nix build of dx does not download esbuild itself.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+true
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [modules/integrations/dioxus.nix](../../modules/integrations/dioxus.nix)
+
+
+
+## dioxus.esbuild.package
+
+
+
+The esbuild package. Setting it overrides ` version `.
+
+
+
+*Type:*
+package
+
+
+
+*Default:*
+` esbuild ` at ` version `, or ` pkgs.esbuild `
+
+*Declared by:*
+ - [modules/integrations/dioxus.nix](../../modules/integrations/dioxus.nix)
+
+
+
+## dioxus.esbuild.version
+
+
+
+The esbuild version to install.
+A version is installed from nixpkgs if it has it, otherwise from nixpkgs-multiverse,
+which needs the ` nixpkgs-multiverse ` input. When null, ` pkgs.esbuild ` is installed.
+
+
+
+*Type:*
+null or string
+
+
+
+*Default:*
+
+```nix
+null
+```
+
+*Declared by:*
+ - [modules/integrations/dioxus.nix](../../modules/integrations/dioxus.nix)
+
+
+
+## dioxus.version
+
+
+
+The version to install. It must match the ` dioxus ` crate exactly.
+Defaults to the version of ` dioxus ` in Cargo.lock, if there is one.
+
+A version is installed from nixpkgs if it has it, otherwise from nixpkgs-multiverse,
+which needs the ` nixpkgs-multiverse ` input. When null, ` pkgs.dioxus-cli ` is installed.
+
+
+
+*Type:*
+null or string
+
+
+
+*Default:*
+the version of ` dioxus ` in Cargo.lock, or null
+
+*Declared by:*
+ - [modules/integrations/dioxus.nix](../../modules/integrations/dioxus.nix)
+
+
+
+## dioxus.wasm-bindgen.enable
+
+
+
+Whether to enable wasm-bindgen-cli, which dx and wasm-bindgen-test-runner need at the crate’s exact version.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+true
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [modules/integrations/dioxus.nix](../../modules/integrations/dioxus.nix)
+
+
+
+## dioxus.wasm-bindgen.package
+
+
+
+The wasm-bindgen-cli package. Setting it overrides ` version `.
+
+
+
+*Type:*
+package
+
+
+
+*Default:*
+` wasm-bindgen-cli ` at ` version `, or ` pkgs.wasm-bindgen-cli `
+
+*Declared by:*
+ - [modules/integrations/dioxus.nix](../../modules/integrations/dioxus.nix)
+
+
+
+## dioxus.wasm-bindgen.version
+
+
+
+The version to install. It must match the ` wasm-bindgen ` crate exactly.
+Defaults to the version of ` wasm-bindgen ` in Cargo.lock, if there is one.
+
+A version is installed from nixpkgs if it has it, otherwise from nixpkgs-multiverse,
+which needs the ` nixpkgs-multiverse ` input. When null, ` pkgs.wasm-bindgen-cli ` is installed.
+
+
+
+*Type:*
+null or string
+
+
+
+*Default:*
+the version of ` wasm-bindgen ` in Cargo.lock, or null
+
+*Declared by:*
+ - [modules/integrations/dioxus.nix](../../modules/integrations/dioxus.nix)
+
+
+
+## dioxus.wasm-opt.enable
+
+
+
+Whether to enable wasm-opt (from binaryen), which dx uses to optimize WebAssembly. The Nix build of dx does not download wasm-opt itself.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+true
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [modules/integrations/dioxus.nix](../../modules/integrations/dioxus.nix)
+
+
+
+## dioxus.wasm-opt.package
+
+
+
+The binaryen package that provides wasm-opt. Setting it overrides ` version `.
+
+
+
+*Type:*
+package
+
+
+
+*Default:*
+` binaryen ` at ` version `, or ` pkgs.binaryen `
+
+*Declared by:*
+ - [modules/integrations/dioxus.nix](../../modules/integrations/dioxus.nix)
+
+
+
+## dioxus.wasm-opt.version
+
+
+
+The binaryen version to install.
+A version is installed from nixpkgs if it has it, otherwise from nixpkgs-multiverse,
+which needs the ` nixpkgs-multiverse ` input. When null, ` pkgs.binaryen ` is installed.
+
+
+
+*Type:*
+null or string
+
+
+
+*Default:*
+
+```nix
+null
+```
+
+*Declared by:*
+ - [modules/integrations/dioxus.nix](../../modules/integrations/dioxus.nix)
+
+
+
 ## languages.dang.enable
 
 
@@ -1628,5 +1967,108 @@ list of string
 
 *Declared by:*
  - [modules/integrations/vale.nix](../../modules/integrations/vale.nix)
+
+
+
+## worker-build.enable
+
+
+
+Whether to enable worker-build, which builds Rust Cloudflare Workers.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [modules/integrations/worker-build.nix](../../modules/integrations/worker-build.nix)
+
+
+
+## worker-build.package
+
+
+
+The worker-build package. Setting it overrides ` version `.
+
+
+
+*Type:*
+package
+
+
+
+*Default:*
+` worker-build ` at ` version `, or ` pkgs.worker-build `
+
+*Declared by:*
+ - [modules/integrations/worker-build.nix](../../modules/integrations/worker-build.nix)
+
+
+
+## worker-build.cargoLock
+
+
+
+The Cargo.lock to read the worker versions from.
+When null, Cargo.lock at the project root is used if it exists.
+
+
+
+*Type:*
+null or absolute path
+
+
+
+*Default:*
+
+```nix
+null
+```
+
+*Declared by:*
+ - [modules/integrations/worker-build.nix](../../modules/integrations/worker-build.nix)
+
+
+
+## worker-build.version
+
+
+
+The version to install. It must match the ` worker ` crate exactly.
+Defaults to the version of ` worker ` in Cargo.lock, if there is one.
+
+A version is installed from nixpkgs if it has it, otherwise from nixpkgs-multiverse,
+which needs the ` nixpkgs-multiverse ` input. When null, ` pkgs.worker-build ` is installed.
+
+
+
+*Type:*
+null or string
+
+
+
+*Default:*
+the version of ` worker ` in Cargo.lock, or null
+
+*Declared by:*
+ - [modules/integrations/worker-build.nix](../../modules/integrations/worker-build.nix)
 
 
