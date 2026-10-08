@@ -209,6 +209,118 @@ pkgs.dang or (pkgs.callPackage ./package.nix { })
 
 
 
+## languages.tailwindcss.enable
+
+
+
+Whether to enable tools for Tailwind CSS development.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [modules/languages/tailwindcss](../../modules/languages/tailwindcss)
+
+
+
+## languages.tailwindcss.package
+
+
+
+The Tailwind CSS package to use.
+
+
+
+*Type:*
+package
+
+
+
+*Default:*
+
+```nix
+pkgs.tailwindcss_4
+```
+
+*Declared by:*
+ - [modules/languages/tailwindcss](../../modules/languages/tailwindcss)
+
+
+
+## languages.tailwindcss.lsp.enable
+
+
+
+Whether to enable Tailwind CSS language server.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+true
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [modules/languages/tailwindcss](../../modules/languages/tailwindcss)
+
+
+
+## languages.tailwindcss.lsp.package
+
+
+
+The Tailwind CSS language server package to use.
+
+
+
+*Type:*
+package
+
+
+
+*Default:*
+
+```nix
+pkgs.tailwindcss-language-server
+```
+
+*Declared by:*
+ - [modules/languages/tailwindcss](../../modules/languages/tailwindcss)
+
+
+
 ## services.litellm.enable
 
 

@@ -1,6 +1,7 @@
 {
   imports = [
     ./languages/dang
+    ./languages/tailwindcss
     ./integrations/dagger.nix
     ./integrations/vale.nix
     ./services/litellm.nix
