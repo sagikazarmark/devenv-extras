@@ -29,6 +29,7 @@ Then enable the modules you need in `devenv.nix`:
 
 {
   languages.dang.enable = true;
+  # languages.tailwindcss.enable = true;
   # dagger.enable = true;
   # services.litellm.enable = true;
   # services.ollama.enable = true;
@@ -143,6 +144,19 @@ and why multiple search paths or symlink trees are not equivalent to this layout
 
 Disable the language server with
 `vale.lsp.enable = false`, or the hook with `git-hooks.hooks.vale.enable = false`.
+
+### Tailwind CSS
+
+Add the Tailwind CSS CLI and its language server:
+
+```nix
+languages.tailwindcss.enable = true;
+```
+
+The CLI defaults to `pkgs.tailwindcss_4`; override `languages.tailwindcss.package`
+to use a different version. Disable the language server with
+`languages.tailwindcss.lsp.enable = false`, or choose another one with
+`languages.tailwindcss.lsp.package`.
 
 ### Ollama
 
