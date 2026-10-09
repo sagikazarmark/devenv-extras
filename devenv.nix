@@ -20,7 +20,8 @@
 
     repo_root="$(git rev-parse --show-toplevel)"
     tmp_root="$(mktemp -d "''${TMPDIR:-/tmp}/devenv-extras-tests.XXXXXX")"
-    trap 'rm -rf "$tmp_root"' EXIT
+    # Fixtures can leave read-only files behind, such as state copied from the Nix store.
+    trap 'chmod -R u+w "$tmp_root"; rm -rf "$tmp_root"' EXIT
 
     found=0
     while IFS= read -r config; do

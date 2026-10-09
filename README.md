@@ -31,6 +31,8 @@ Then enable the modules you need in `devenv.nix`:
   languages.dang.enable = true;
   # languages.tailwindcss.enable = true;
   # dagger.enable = true;
+  # dioxus.enable = true;
+  # worker-build.enable = true;
   # services.litellm.enable = true;
   # services.ollama.enable = true;
   # services.sandbox-agent.enable = true;
@@ -144,6 +146,51 @@ and why multiple search paths or symlink trees are not equivalent to this layout
 
 Disable the language server with
 `vale.lsp.enable = false`, or the hook with `git-hooks.hooks.vale.enable = false`.
+
+### Dioxus
+
+Add the [Dioxus](https://dioxuslabs.com/) CLI (`dx`) and the tools it runs:
+`wasm-bindgen-cli`, esbuild and `wasm-opt` (from binaryen). The Nix build of `dx`
+does not download esbuild or `wasm-opt` itself:
+
+```nix
+dioxus.enable = true;
+```
+
+`dx` and `wasm-bindgen-cli` must match the `dioxus` and `wasm-bindgen` crates
+exactly, so `dioxus.version` and `dioxus.wasm-bindgen.version` default to the
+versions in `Cargo.lock` at the project root. Point `dioxus.cargoLock` at another
+lockfile, for example in a workspace subdirectory. Without a lockfile, the
+versions are null and `pkgs.dioxus-cli` and `pkgs.wasm-bindgen-cli` are installed.
+
+A version comes from nixpkgs when it has it, including versioned attributes such
+as `pkgs.wasm-bindgen-cli_0_2_100`. Otherwise it comes from
+[nixpkgs-multiverse](https://github.com/fzakaria/nixpkgs-multiverse) through
+devenv's `multiverse` argument, which needs the input:
+
+```sh
+devenv inputs add nixpkgs-multiverse github:fzakaria/nixpkgs-multiverse
+```
+
+Set `dioxus.esbuild.version` or `dioxus.wasm-opt.version` (a binaryen version) to
+pin those the same way. Each tool also has a `package` option that overrides its
+version, and `dioxus.wasm-bindgen.enable`, `dioxus.esbuild.enable` and
+`dioxus.wasm-opt.enable` turn the extra tools off.
+
+### worker-build
+
+Add [worker-build](https://github.com/cloudflare/workers-rs), which builds Rust
+Cloudflare Workers:
+
+```nix
+worker-build.enable = true;
+```
+
+`worker-build` is released together with the `worker` crate, so
+`worker-build.version` defaults to the version of `worker` in `Cargo.lock`, the
+same way as Dioxus: set `worker-build.cargoLock` to read another lockfile, and a
+version missing from nixpkgs comes from nixpkgs-multiverse. Without a lockfile,
+`pkgs.worker-build` is installed. `worker-build.package` overrides the version.
 
 ### Tailwind CSS
 
