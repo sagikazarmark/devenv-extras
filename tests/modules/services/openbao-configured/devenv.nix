@@ -16,7 +16,12 @@ in
     kv.path = "kv";
     storage.backend = "raft";
     exportVaultEnv = false;
-    settings.log_level = "debug";
+    settings = {
+      log_level = "debug";
+      # Merged into the generated listener, which keeps its address.
+      listener.tcp.max_request_duration = "30s";
+      storage.raft.path = "${config.devenv.state}/custom-raft";
+    };
     environmentVariables.TEST_PASSWORD = "hunter2";
     initialize = [
       {

@@ -30,7 +30,12 @@ let
 
   # One directory per backend: switching backends starts over
   # instead of pointing a backend at data it cannot read.
-  dataDir = "${cfg.stateDir}/${cfg.storage.backend}";
+  # A path set through `settings` takes precedence, so setup manages the directory OpenBao uses.
+  dataDir = lib.attrByPath [
+    "storage"
+    cfg.storage.backend
+    "path"
+  ] "${cfg.stateDir}/${cfg.storage.backend}" cfg.settings;
   initHashFile = "${dataDir}.init.sha256";
 
   # OpenBao 2.7 replaced the file backend with PebbleDB.
@@ -107,15 +112,13 @@ let
     }
     // lib.optionalAttrs (cfg.storage.backend == "raft") { node_id = "devenv"; };
 
-    listener = [
-      {
-        tcp = {
-          address = "${cfg.host}:${toString port}";
-          cluster_address = "${cfg.host}:${toString clusterPort}";
-          tls_disable = true;
-        };
-      }
-    ];
+    # A single block as an object rather than a list,
+    # so that `settings.listener.tcp` merges into it instead of replacing it.
+    listener.tcp = {
+      address = "${cfg.host}:${toString port}";
+      cluster_address = "${cfg.host}:${toString clusterPort}";
+      tls_disable = true;
+    };
 
     seal.static = {
       current_key_id = "devenv";
@@ -322,9 +325,11 @@ in
       default = { };
       example = {
         log_level = "debug";
+        listener.tcp.max_request_duration = "30s";
       };
       description = ''
-        OpenBao server configuration, merged over the generated configuration.
+        OpenBao server configuration, merged recursively over the generated configuration,
+        such as `listener.tcp` and `storage.<backend>`.
         See <https://openbao.org/docs/configuration/> for available settings.
 
         Use `initialize` for self-initialization instead of `settings.initialize`.

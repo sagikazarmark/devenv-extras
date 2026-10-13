@@ -1708,7 +1708,8 @@ The actual port is allocated by devenv and may differ;
 
 
 
-OpenBao server configuration, merged over the generated configuration.
+OpenBao server configuration, merged recursively over the generated configuration,
+such as ` listener.tcp ` and ` storage.<backend> `.
 See [https://openbao.org/docs/configuration/](https://openbao.org/docs/configuration/) for available settings.
 
 Use ` initialize ` for self-initialization instead of ` settings.initialize `.
@@ -1732,6 +1733,11 @@ JSON value
 
 ```nix
 {
+  listener = {
+    tcp = {
+      max_request_duration = "30s";
+    };
+  };
   log_level = "debug";
 }
 ```

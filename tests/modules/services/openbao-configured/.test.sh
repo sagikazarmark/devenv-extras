@@ -3,7 +3,9 @@ set -euo pipefail
 
 bao token lookup -format=json | grep -q '"devenv-test"'
 
-test -d "$DEVENV_STATE/openbao/raft/raft"
+test -d "$DEVENV_STATE/custom-raft/raft"
+test -f "$DEVENV_STATE/custom-raft.init.sha256"
+test ! -e "$DEVENV_STATE/openbao/raft"
 
 bao secrets list | grep -q '^kv/'
 if bao secrets list | grep -q '^secret/'; then
