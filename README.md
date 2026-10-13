@@ -35,6 +35,7 @@ Then enable the modules you need in `devenv.nix`:
   # worker-build.enable = true;
   # services.litellm.enable = true;
   # services.ollama.enable = true;
+  # services.openbao.enable = true;
   # services.sandbox-agent.enable = true;
 }
 ```
@@ -275,6 +276,107 @@ them through `/v1/models`; any other pulled model is reachable through a wildcar
 route. Change the prefix with `services.litellm.ollama.prefix`, the listed models
 with `services.litellm.ollama.models`, or disable the integration with
 `services.litellm.ollama.enable = false`.
+
+### OpenBao
+
+Run an [OpenBao](https://openbao.org/) server with `devenv up`:
+
+```nix
+services.openbao.enable = true;
+```
+
+Unlike `bao server -dev`, the server keeps its data across restarts. On the first
+start, it initializes itself with
+[self-initialization](https://openbao.org/docs/configuration/self-init/) and
+unseals itself on every start with a
+[static seal](https://openbao.org/docs/configuration/seal/static/) key, generated
+in `.devenv/state/openbao/unseal.key`. There are no unseal keys or root token to
+copy: self-initialization creates a token with the root policy and the ID from
+`services.openbao.token` (default `root`), and mounts a KV version 2 secrets engine
+at `secret/`, like the development server.
+
+The API port is allocated from `services.openbao.port` (default `8200`), and the
+cluster listener, which OpenBao always starts, from `services.openbao.clusterPort`
+(default `8201`). The shell exports `BAO_ADDR` and `BAO_TOKEN`, so `bao` works
+without extra configuration:
+
+```sh
+bao kv put secret/app api_key=secret
+```
+
+It also exports `VAULT_ADDR` and `VAULT_TOKEN` for clients that only support
+Vault, such as Terraform. Disable them with `services.openbao.exportVaultEnv = false`.
+The web UI is served at `$BAO_ADDR/ui`.
+
+Add your own requests to run during self-initialization, such as enabling auth
+methods or writing secrets. Requests can read the server's environment, set with
+`services.openbao.environmentVariables`:
+
+```nix
+services.openbao = {
+  enable = true;
+  environmentVariables.ADMIN_PASSWORD = "admin";
+  initialize = [
+    {
+      name = "userpass";
+      requests = [
+        {
+          name = "enable-userpass";
+          operation = "update";
+          path = "sys/auth/userpass";
+          data.type = "userpass";
+        }
+        {
+          name = "add-admin";
+          operation = "update";
+          path = "auth/userpass/users/admin";
+          data = {
+            password = {
+              eval_source = "env";
+              eval_type = "string";
+              env_var = "ADMIN_PASSWORD";
+            };
+            token_policies = [ "root" ];
+          };
+        }
+      ];
+    }
+  ];
+};
+```
+
+Self-initialization only runs against empty storage, so changes to `token`, `kv`
+or `initialize` apply only after removing the data directory. Devenv prints a
+warning with the directory to remove when they change.
+
+Data is stored with the `pebbledb` backend on OpenBao 2.7 and later, which removed
+the `file` backend, and with `file` before. Each backend has its own directory
+under `.devenv/state/openbao`. Set `services.openbao.storage.backend = "raft"` to
+use integrated storage instead; its first start takes several seconds. Use
+`services.openbao.settings` for any other
+[server configuration](https://openbao.org/docs/configuration/), such as
+`log_level`.
+
+The server listens on plain HTTP. For HTTPS, use the
+[devenv proxy](https://devenv.sh/processes/), which serves OpenBao with a
+certificate from the project's mkcert certificate authority. The client variables
+are defaults, so pointing them at the proxy is a plain override:
+
+```nix
+process.proxy.enable = true;
+
+processes.openbao.proxy = {
+  hostname = "openbao.localhost";
+  https.enable = true;
+};
+
+# Optional: point clients at the proxy instead of the direct port.
+env.BAO_ADDR = "https://openbao.localhost";
+```
+
+`VAULT_ADDR` and `VAULT_TOKEN` follow `BAO_ADDR` and `BAO_TOKEN`. If the
+certificate authority is not trusted by the system, also set
+`env.BAO_CACERT = "${config.env.DEVENV_STATE}/mkcert/rootCA.pem"`.
 
 ### Reference
 
