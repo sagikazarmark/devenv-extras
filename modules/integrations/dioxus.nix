@@ -124,6 +124,45 @@ in
       };
     };
 
+    serve = {
+      enable = lib.mkEnableOption "a `dioxus` process that runs `dx serve`, which rebuilds and hot-reloads the app";
+
+      directory = lib.mkOption {
+        type = lib.types.str;
+        default = ".";
+        example = "app";
+        description = "The directory of the crate to serve, relative to the project root.";
+      };
+
+      host = lib.mkOption {
+        type = lib.types.str;
+        default = "127.0.0.1";
+        example = "0.0.0.0";
+        description = "The address the dev server listens on.";
+      };
+
+      port = lib.mkOption {
+        type = lib.types.port;
+        default = 8080;
+        description = ''
+          The base port the dev server listens on.
+          The actual port is allocated by devenv and may differ;
+          `config.processes.dioxus.ports.http.value` has it.
+        '';
+      };
+
+      extraArgs = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [ ];
+        example = [
+          "--platform"
+          "web"
+          "--hot-patch"
+        ];
+        description = "More arguments for `dx serve`.";
+      };
+    };
+
     import = lib.mkOption {
       type = lib.types.functionTo (lib.types.functionTo lib.types.package);
       readOnly = true;
@@ -213,16 +252,46 @@ in
     };
   };
 
-  config = lib.mkIf cfg.enable {
-    packages = [
-      cfg.package
+  config = lib.mkIf cfg.enable (
+    lib.mkMerge [
+      {
+        packages = [
+          cfg.package
+        ]
+        ++ lib.optional cfg.wasm-bindgen.enable cfg.wasm-bindgen.package
+        ++ lib.optional cfg.esbuild.enable cfg.esbuild.package
+        ++ lib.optional cfg.wasm-opt.enable cfg.wasm-opt.package;
+
+        languages.rust.enable = lib.mkDefault true;
+
+        warnings = rust.wasmTargetWarnings "dx (for the web platform)";
+      }
+
+      (lib.mkIf cfg.serve.enable {
+        processes.dioxus = {
+          # dx finds cargo, wasm-bindgen and the other tools in the shell.
+          # It is not interactive here: the process manager owns the terminal.
+          exec = "exec ${lib.getExe cfg.package} serve ${
+            lib.escapeShellArgs (
+              [
+                "--addr"
+                cfg.serve.host
+                "--port"
+                (toString config.processes.dioxus.ports.http.value)
+                "--open"
+                "false"
+                "--interactive"
+                "false"
+              ]
+              ++ cfg.serve.extraArgs
+            )
+          }";
+
+          cwd = "${config.devenv.root}/${cfg.serve.directory}";
+
+          ports.http.allocate = cfg.serve.port;
+        };
+      })
     ]
-    ++ lib.optional cfg.wasm-bindgen.enable cfg.wasm-bindgen.package
-    ++ lib.optional cfg.esbuild.enable cfg.esbuild.package
-    ++ lib.optional cfg.wasm-opt.enable cfg.wasm-opt.package;
-
-    languages.rust.enable = lib.mkDefault true;
-
-    warnings = rust.wasmTargetWarnings "dx (for the web platform)";
-  };
+  );
 }

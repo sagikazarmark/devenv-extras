@@ -364,6 +364,164 @@ a function that builds an app with ` dx bundle `
 
 
 
+## dioxus.serve.enable
+
+
+
+Whether to enable a ` dioxus ` process that runs ` dx serve `, which rebuilds and hot-reloads the app.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [modules/integrations/dioxus.nix](../../modules/integrations/dioxus.nix)
+
+
+
+## dioxus.serve.directory
+
+
+
+The directory of the crate to serve, relative to the project root.
+
+
+
+*Type:*
+string
+
+
+
+*Default:*
+
+```nix
+"."
+```
+
+
+
+*Example:*
+
+```nix
+"app"
+```
+
+*Declared by:*
+ - [modules/integrations/dioxus.nix](../../modules/integrations/dioxus.nix)
+
+
+
+## dioxus.serve.extraArgs
+
+
+
+More arguments for ` dx serve `.
+
+
+
+*Type:*
+list of string
+
+
+
+*Default:*
+
+```nix
+[ ]
+```
+
+
+
+*Example:*
+
+```nix
+[
+  "--platform"
+  "web"
+  "--hot-patch"
+]
+```
+
+*Declared by:*
+ - [modules/integrations/dioxus.nix](../../modules/integrations/dioxus.nix)
+
+
+
+## dioxus.serve.host
+
+
+
+The address the dev server listens on.
+
+
+
+*Type:*
+string
+
+
+
+*Default:*
+
+```nix
+"127.0.0.1"
+```
+
+
+
+*Example:*
+
+```nix
+"0.0.0.0"
+```
+
+*Declared by:*
+ - [modules/integrations/dioxus.nix](../../modules/integrations/dioxus.nix)
+
+
+
+## dioxus.serve.port
+
+
+
+The base port the dev server listens on.
+The actual port is allocated by devenv and may differ;
+` config.processes.dioxus.ports.http.value ` has it.
+
+
+
+*Type:*
+16 bit unsigned integer; between 0 and 65535 (both inclusive)
+
+
+
+*Default:*
+
+```nix
+8080
+```
+
+*Declared by:*
+ - [modules/integrations/dioxus.nix](../../modules/integrations/dioxus.nix)
+
+
+
 ## dioxus.version
 
 
@@ -2622,8 +2780,6 @@ true
 
 
 ## worker-build.package
-
-
 
 The worker-build package. Setting it overrides ` version `.
 

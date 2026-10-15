@@ -190,6 +190,24 @@ languages.rust = {
 };
 ```
 
+`dioxus.serve.enable` adds a `dioxus` process that runs `dx serve`, which
+rebuilds and hot-reloads the app as you edit it:
+
+```nix
+dioxus = {
+  enable = true;
+  serve = {
+    enable = true;
+    # directory = "app";              # the crate, relative to the project root
+    # extraArgs = [ "--hot-patch" ];
+  };
+};
+```
+
+The dev server listens on `127.0.0.1` at a port allocated from 8080; set
+`dioxus.serve.host` and `dioxus.serve.port` to change them.
+`config.processes.dioxus.ports.http.value` has the allocated port.
+
 `dioxus.import` builds an app with `dx bundle` as a Nix package, for devenv
 [outputs](https://devenv.sh/outputs/). Dependencies are vendored from
 `Cargo.lock` and `dx` uses the tools above (and the `languages.tailwindcss`
