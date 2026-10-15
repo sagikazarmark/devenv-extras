@@ -33,6 +33,7 @@ Then enable the modules you need in `devenv.nix`:
   # dagger.enable = true;
   # dioxus.enable = true;
   # worker-build.enable = true;
+  # wrangler.enable = true;
   # services.litellm.enable = true;
   # services.ollama.enable = true;
   # services.openbao.enable = true;
@@ -178,6 +179,87 @@ pin those the same way. Each tool also has a `package` option that overrides its
 version, and `dioxus.wasm-bindgen.enable`, `dioxus.esbuild.enable` and
 `dioxus.wasm-opt.enable` turn the extra tools off.
 
+`dioxus.enable` also enables `languages.rust` by default; set
+`languages.rust.enable = false` to use a toolchain from outside devenv. Building
+for the web needs the `wasm32-unknown-unknown` target, which the default
+`nixpkgs` channel cannot add, so devenv warns until the toolchain has it:
+
+```nix
+languages.rust = {
+  channel = "stable";
+  targets = [ "wasm32-unknown-unknown" ];
+};
+```
+
+`dioxus.serve.enable` adds a `dioxus` process that runs `dx serve`, which
+rebuilds and hot-reloads the app as you edit it:
+
+```nix
+dioxus = {
+  enable = true;
+  serve = {
+    enable = true;
+    # directory = "app";              # the crate, relative to the project root
+    # extraArgs = [ "--hot-patch" ];
+  };
+};
+```
+
+The dev server listens on `127.0.0.1` at a port allocated from 8080; set
+`dioxus.serve.host` and `dioxus.serve.port` to change them.
+`config.processes.dioxus.ports.http.value` has the allocated port.
+
+For HTTPS, use the [devenv proxy](https://devenv.sh/processes/), which serves the
+app with a certificate from the project's mkcert certificate authority. Hot
+reloading works through it, because the app connects to the dev server's
+WebSocket on the page's own host, with `wss:` on HTTPS pages:
+
+```nix
+process.proxy.enable = true;
+
+processes.dioxus.proxy = {
+  hostname = "app.localhost";
+  https.enable = true;
+};
+```
+
+When the project has no certificate authority yet, devenv runs `mkcert -install`,
+which adds it to the system trust stores so browsers accept the certificate.
+
+`dioxus.import` builds an app with `dx bundle` as a Nix package, for devenv
+[outputs](https://devenv.sh/outputs/). Dependencies are vendored from
+`Cargo.lock` and `dx` uses the tools above (and the `languages.tailwindcss`
+package, if enabled), so the build runs offline:
+
+```nix
+{ config, ... }:
+
+{
+  dioxus.enable = true;
+
+  outputs.web = config.dioxus.import ./. { };
+}
+```
+
+`devenv build outputs.web` then builds the bundle: the web app in `public`, and
+for fullstack apps the `server` executable next to it. dx reads `Dioxus.toml` as
+usual. The second argument takes:
+
+- `platform` (default `"web"`). Other platforms need packaging tools that may
+  not work in the Nix sandbox.
+- `fullstack = true` builds the server even when the `fullstack` feature of
+  `dioxus` is not enabled. dx always builds it when that feature is enabled,
+  either on the `dioxus` dependency or through a crate feature in
+  `buildFeatures`, so keep it out of those for a client-only bundle.
+- `release` (default `true`).
+- `buildFeatures` and `buildNoDefaultFeatures` for cargo features.
+- `dxFlags`: more flags for `dx bundle`.
+- `rustPlatform` to build without the devenv Rust toolchain.
+
+Other arguments go to `rustPlatform.buildRustPackage`, such as
+`buildAndTestSubdir` for a crate in a workspace subdirectory, or `buildInputs`
+for libraries the server links to.
+
 ### worker-build
 
 Add [worker-build](https://github.com/cloudflare/workers-rs), which builds Rust
@@ -192,6 +274,74 @@ worker-build.enable = true;
 same way as Dioxus: set `worker-build.cargoLock` to read another lockfile, and a
 version missing from nixpkgs comes from nixpkgs-multiverse. Without a lockfile,
 `pkgs.worker-build` is installed. `worker-build.package` overrides the version.
+
+Like Dioxus, `worker-build.enable` enables `languages.rust` by default and
+warns until the toolchain has the `wasm32-unknown-unknown` target.
+
+`worker-build.import` builds a worker the same way as `dioxus.import`, and
+returns the contents of worker-build's `build` directory:
+
+```nix
+outputs.worker = config.worker-build.import ./. { };
+```
+
+worker-build would download wasm-bindgen, esbuild and `wasm-opt`, so the build
+points it at `worker-build.wasm-bindgen.package` (matching `wasm-bindgen` in
+`Cargo.lock`), `worker-build.esbuild.package` and `worker-build.wasm-opt.package`
+instead. The second argument takes `release` (default `true`; `false` builds
+with `--dev`), `buildFeatures`, `buildNoDefaultFeatures`, `rustPlatform`, and
+`workerBuildFlags` for more worker-build flags. Other arguments go to
+`rustPlatform.buildRustPackage`.
+
+### Wrangler
+
+Add [Wrangler](https://developers.cloudflare.com/workers/wrangler/), and run
+workers locally with `wrangler dev`:
+
+```nix
+wrangler = {
+  enable = true;
+  dev = {
+    api = { };                          # the worker in ./api
+    app.directory = "workers/app";
+  };
+};
+```
+
+Each worker runs in its own `wrangler-<name>` process, with `wrangler --cwd`
+set to its directory, so its configuration and custom build (such as
+`worker-build`) work unchanged. Ports are allocated from 8787 for HTTP and 9229
+for the inspector, counting up in the order of the workers; set `port` and
+`inspectorPort` to change them, `config` for a configuration file other than
+`wrangler.toml`, `wrangler.json` or `wrangler.jsonc`, and `extraArgs` for more
+`wrangler dev` flags.
+
+The sessions reach each other through Wrangler's dev registry: a worker can call
+another through a service binding, or use a Durable Object defined in another
+with `script_name`. The registry is in the devenv state directory, so workers of
+other projects stay apart; `WRANGLER_REGISTRY_PATH` points to it in the shell as
+well, and `wrangler.registry = null` uses Wrangler's global one.
+
+With `worker-build.enable`, the processes point worker-build at esbuild and
+`wasm-opt` from Nix, and at wasm-bindgen too when its version is known from
+`Cargo.lock`, instead of downloading them.
+
+For HTTPS, use the [devenv proxy](https://devenv.sh/processes/) the same way as
+for Dioxus. Without a `hostname`, a worker's URL is
+`wrangler-<name>.<project>.localhost`, after its process; its inspector gets
+`inspector.` in front of that:
+
+```nix
+process.proxy.enable = true;
+
+processes.wrangler-app.proxy = {
+  hostname = "app.localhost";
+  https.enable = true;
+};
+```
+
+The proxy terminates TLS: `wrangler dev` still receives HTTP, and devenv adds
+`X-Forwarded-Proto: https` to HTTPS requests.
 
 ### Tailwind CSS
 

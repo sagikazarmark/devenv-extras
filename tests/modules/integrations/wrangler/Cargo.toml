@@ -1,0 +1,6 @@
+[workspace]
+members = ["api", "app"]
+resolver = "2"
+
+[workspace.dependencies]
+worker = "=0.8.7"

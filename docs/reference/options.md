@@ -310,6 +310,219 @@ null
 
 
 
+## dioxus.import
+
+
+
+Build a Cargo project with ` dx bundle `, for example to use it in ` outputs `.
+
+It takes the path to the project (the directory with Cargo.lock) and an attribute set of
+arguments, and returns a package with the bundle: ` public ` with the web app, and the server
+executable for fullstack apps. Dependencies are vendored from Cargo.lock, so the build runs
+offline, and dx uses the ` wasm-bindgen `, ` esbuild ` and ` wasm-opt ` packages, whether or not
+they are enabled in the shell, and the ` languages.tailwindcss ` package if it is enabled.
+dx reads Dioxus.toml as usual, except for ` out_dir `.
+
+The arguments are:
+
+ - ` platform `: the platform to bundle for, ` "web" ` by default. Platforms other than web need
+   packaging tools that may not work in the Nix sandbox.
+ - ` fullstack `: build the server as well, even when the ` fullstack ` feature of ` dioxus ` is not
+   enabled. dx always builds it when that feature is enabled, either on the ` dioxus ` dependency
+   or through a crate feature in ` buildFeatures `, so leave it out of those for a client-only bundle.
+ - ` release `: build with ` --release ` (the default).
+ - ` buildFeatures ` and ` buildNoDefaultFeatures `: the cargo features to build with.
+ - ` dxFlags `: more flags for ` dx bundle `, such as ` [ "--base-path" "app" ] `.
+ - ` rustPlatform `: the ` rustPlatform ` to build with, instead of one with the devenv Rust toolchain.
+
+Other arguments, such as ` buildAndTestSubdir ` for a crate in a workspace subdirectory or
+` buildInputs ` for the server’s system libraries, are passed to ` rustPlatform.buildRustPackage `.
+
+The devenv Rust toolchain needs the wasm32-unknown-unknown target:
+
+```nix
+languages.rust = {
+  enable = true;
+  channel = "stable";
+  targets = [ "wasm32-unknown-unknown" ];
+};
+
+outputs.web = config.dioxus.import ./. { };
+```
+
+
+
+*Type:*
+function that evaluates to a(n) function that evaluates to a(n) package *(read only)*
+
+
+
+*Default:*
+a function that builds an app with ` dx bundle `
+
+*Declared by:*
+ - [modules/integrations/dioxus.nix](../../modules/integrations/dioxus.nix)
+
+
+
+## dioxus.serve.enable
+
+
+
+Whether to enable a ` dioxus ` process that runs ` dx serve `, which rebuilds and hot-reloads the app.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [modules/integrations/dioxus.nix](../../modules/integrations/dioxus.nix)
+
+
+
+## dioxus.serve.directory
+
+
+
+The directory of the crate to serve, relative to the project root.
+
+
+
+*Type:*
+string
+
+
+
+*Default:*
+
+```nix
+"."
+```
+
+
+
+*Example:*
+
+```nix
+"app"
+```
+
+*Declared by:*
+ - [modules/integrations/dioxus.nix](../../modules/integrations/dioxus.nix)
+
+
+
+## dioxus.serve.extraArgs
+
+
+
+More arguments for ` dx serve `.
+
+
+
+*Type:*
+list of string
+
+
+
+*Default:*
+
+```nix
+[ ]
+```
+
+
+
+*Example:*
+
+```nix
+[
+  "--platform"
+  "web"
+  "--hot-patch"
+]
+```
+
+*Declared by:*
+ - [modules/integrations/dioxus.nix](../../modules/integrations/dioxus.nix)
+
+
+
+## dioxus.serve.host
+
+
+
+The address the dev server listens on.
+
+
+
+*Type:*
+string
+
+
+
+*Default:*
+
+```nix
+"127.0.0.1"
+```
+
+
+
+*Example:*
+
+```nix
+"0.0.0.0"
+```
+
+*Declared by:*
+ - [modules/integrations/dioxus.nix](../../modules/integrations/dioxus.nix)
+
+
+
+## dioxus.serve.port
+
+
+
+The base port the dev server listens on.
+The actual port is allocated by devenv and may differ;
+` config.processes.dioxus.ports.http.value ` has it.
+
+
+
+*Type:*
+16 bit unsigned integer; between 0 and 65535 (both inclusive)
+
+
+
+*Default:*
+
+```nix
+8080
+```
+
+*Declared by:*
+ - [modules/integrations/dioxus.nix](../../modules/integrations/dioxus.nix)
+
+
+
 ## dioxus.version
 
 
@@ -2569,8 +2782,6 @@ true
 
 ## worker-build.package
 
-
-
 The worker-build package. Setting it overrides ` version `.
 
 
@@ -2592,7 +2803,7 @@ package
 
 
 
-The Cargo.lock to read the worker versions from.
+The Cargo.lock to read the worker and wasm-bindgen versions from.
 When null, Cargo.lock at the project root is used if it exists.
 
 
@@ -2607,6 +2818,78 @@ null or absolute path
 ```nix
 null
 ```
+
+*Declared by:*
+ - [modules/integrations/worker-build.nix](../../modules/integrations/worker-build.nix)
+
+
+
+## worker-build.esbuild.package
+
+
+
+The esbuild package that ` import ` builds with.
+
+
+
+*Type:*
+package
+
+
+
+*Default:*
+
+```nix
+pkgs.esbuild
+```
+
+*Declared by:*
+ - [modules/integrations/worker-build.nix](../../modules/integrations/worker-build.nix)
+
+
+
+## worker-build.import
+
+
+
+Build a Cargo project with worker-build, for example to use it in ` outputs `.
+
+It takes the path to the project (the directory with Cargo.lock) and an attribute set of
+arguments, and returns a package with the contents of worker-build’s ` build ` directory.
+Dependencies are vendored from Cargo.lock, so the build runs offline, and worker-build uses
+the ` wasm-bindgen `, ` esbuild ` and ` wasm-opt ` packages instead of downloading them.
+
+The arguments are:
+
+ - ` release `: build with ` --release ` (the default) or ` --dev `.
+ - ` buildFeatures ` and ` buildNoDefaultFeatures `: the cargo features to build with.
+ - ` workerBuildFlags `: more flags for worker-build, such as ` [ "--no-opt" ] `.
+ - ` rustPlatform `: the ` rustPlatform ` to build with, instead of one with the devenv Rust toolchain.
+
+Other arguments, such as ` buildAndTestSubdir ` for a crate in a workspace subdirectory or
+` buildInputs `, are passed to ` rustPlatform.buildRustPackage `.
+
+The devenv Rust toolchain needs the wasm32-unknown-unknown target:
+
+```nix
+languages.rust = {
+  enable = true;
+  channel = "stable";
+  targets = [ "wasm32-unknown-unknown" ];
+};
+
+outputs.worker = config.worker-build.import ./. { };
+```
+
+
+
+*Type:*
+function that evaluates to a(n) function that evaluates to a(n) package *(read only)*
+
+
+
+*Default:*
+a function that builds a worker with worker-build
 
 *Declared by:*
  - [modules/integrations/worker-build.nix](../../modules/integrations/worker-build.nix)
@@ -2635,5 +2918,371 @@ the version of ` worker ` in Cargo.lock, or null
 
 *Declared by:*
  - [modules/integrations/worker-build.nix](../../modules/integrations/worker-build.nix)
+
+
+
+## worker-build.wasm-bindgen.package
+
+
+
+The wasm-bindgen-cli package that ` import ` builds with. Setting it overrides ` version `.
+
+
+
+*Type:*
+package
+
+
+
+*Default:*
+` wasm-bindgen-cli ` at ` version `, or ` pkgs.wasm-bindgen-cli `
+
+*Declared by:*
+ - [modules/integrations/worker-build.nix](../../modules/integrations/worker-build.nix)
+
+
+
+## worker-build.wasm-bindgen.version
+
+
+
+The wasm-bindgen-cli version that ` import ` builds with.
+The version to install. It must match the ` wasm-bindgen ` crate exactly.
+Defaults to the version of ` wasm-bindgen ` in Cargo.lock, if there is one.
+
+A version is installed from nixpkgs if it has it, otherwise from nixpkgs-multiverse,
+which needs the ` nixpkgs-multiverse ` input. When null, ` pkgs.wasm-bindgen-cli ` is installed.
+
+
+
+*Type:*
+null or string
+
+
+
+*Default:*
+the version of ` wasm-bindgen ` in Cargo.lock, or null
+
+*Declared by:*
+ - [modules/integrations/worker-build.nix](../../modules/integrations/worker-build.nix)
+
+
+
+## worker-build.wasm-opt.package
+
+
+
+The binaryen package that provides wasm-opt for ` import ` builds.
+
+
+
+*Type:*
+package
+
+
+
+*Default:*
+
+```nix
+pkgs.binaryen
+```
+
+*Declared by:*
+ - [modules/integrations/worker-build.nix](../../modules/integrations/worker-build.nix)
+
+
+
+## wrangler.enable
+
+
+
+Whether to enable Wrangler, the Cloudflare Workers CLI.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [modules/integrations/wrangler.nix](../../modules/integrations/wrangler.nix)
+
+
+
+## wrangler.package
+
+
+
+The wrangler package to use.
+
+
+
+*Type:*
+package
+
+
+
+*Default:*
+
+```nix
+pkgs.wrangler
+```
+
+*Declared by:*
+ - [modules/integrations/wrangler.nix](../../modules/integrations/wrangler.nix)
+
+
+
+## wrangler.dev
+
+
+
+Workers to run with ` wrangler dev `, each in a ` wrangler-<name> ` process.
+Each runs in its own session, and the sessions reach each other through the dev registry.
+
+
+
+*Type:*
+attribute set of (submodule)
+
+
+
+*Default:*
+
+```nix
+{ }
+```
+
+
+
+*Example:*
+
+```nix
+{
+  api = { };
+  app.directory = "workers/app";
+}
+
+```
+
+*Declared by:*
+ - [modules/integrations/wrangler.nix](../../modules/integrations/wrangler.nix)
+
+
+
+## wrangler.dev.\<name>.config
+
+
+
+The Wrangler configuration file, relative to ` directory `.
+When null, Wrangler finds ` wrangler.toml `, ` wrangler.json ` or ` wrangler.jsonc ` itself.
+
+
+
+*Type:*
+null or string
+
+
+
+*Default:*
+
+```nix
+null
+```
+
+
+
+*Example:*
+
+```nix
+"wrangler.dev.toml"
+```
+
+*Declared by:*
+ - [modules/integrations/wrangler.nix](../../modules/integrations/wrangler.nix)
+
+
+
+## wrangler.dev.\<name>.directory
+
+
+
+The directory of the worker, relative to the project root.
+Wrangler runs there (with ` --cwd `), so its configuration and custom build work unchanged.
+
+
+
+*Type:*
+string
+
+
+
+*Default:*
+the name of the worker
+
+
+
+*Example:*
+
+```nix
+"workers/api"
+```
+
+*Declared by:*
+ - [modules/integrations/wrangler.nix](../../modules/integrations/wrangler.nix)
+
+
+
+## wrangler.dev.\<name>.extraArgs
+
+
+
+More arguments for ` wrangler dev `.
+
+
+
+*Type:*
+list of string
+
+
+
+*Default:*
+
+```nix
+[ ]
+```
+
+
+
+*Example:*
+
+```nix
+[
+  "--env"
+  "staging"
+]
+```
+
+*Declared by:*
+ - [modules/integrations/wrangler.nix](../../modules/integrations/wrangler.nix)
+
+
+
+## wrangler.dev.\<name>.host
+
+
+
+The address the worker listens on.
+
+
+
+*Type:*
+string
+
+
+
+*Default:*
+
+```nix
+"127.0.0.1"
+```
+
+
+
+*Example:*
+
+```nix
+"0.0.0.0"
+```
+
+*Declared by:*
+ - [modules/integrations/wrangler.nix](../../modules/integrations/wrangler.nix)
+
+
+
+## wrangler.dev.\<name>.inspectorPort
+
+
+
+The base port for the devtools inspector.
+The actual port is allocated by devenv and may differ.
+
+
+
+*Type:*
+16 bit unsigned integer; between 0 and 65535 (both inclusive)
+
+
+
+*Default:*
+9229, plus the position of the worker in ` wrangler.dev `
+
+*Declared by:*
+ - [modules/integrations/wrangler.nix](../../modules/integrations/wrangler.nix)
+
+
+
+## wrangler.dev.\<name>.port
+
+
+
+The base port the worker listens on.
+The actual port is allocated by devenv and may differ;
+` config.processes."wrangler-<name>".ports.http.value ` has it.
+
+
+
+*Type:*
+16 bit unsigned integer; between 0 and 65535 (both inclusive)
+
+
+
+*Default:*
+8787, plus the position of the worker in ` wrangler.dev `
+
+*Declared by:*
+ - [modules/integrations/wrangler.nix](../../modules/integrations/wrangler.nix)
+
+
+
+## wrangler.registry
+
+
+
+The dev registry ` wrangler dev ` sessions use to find each other, for service bindings,
+Durable Objects and tail consumers across workers. It is exported as ` WRANGLER_REGISTRY_PATH `.
+The default keeps the workers of this project apart from those of others;
+null uses Wrangler’s global registry.
+
+
+
+*Type:*
+null or string
+
+
+
+*Default:*
+
+```nix
+"${config.devenv.state}/wrangler/registry"
+```
+
+*Declared by:*
+ - [modules/integrations/wrangler.nix](../../modules/integrations/wrangler.nix)
 
 

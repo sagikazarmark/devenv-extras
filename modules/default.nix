@@ -6,6 +6,7 @@
     ./integrations/dioxus.nix
     ./integrations/vale.nix
     ./integrations/worker-build.nix
+    ./integrations/wrangler.nix
     ./services/litellm.nix
     ./services/ollama.nix
     ./services/openbao.nix

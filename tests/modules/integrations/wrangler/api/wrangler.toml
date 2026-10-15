@@ -1,0 +1,14 @@
+name = "api"
+main = "build/index.js"
+compatibility_date = "2025-09-01"
+
+[build]
+command = "worker-build --dev"
+
+[[durable_objects.bindings]]
+name = "COUNTER"
+class_name = "Counter"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Counter"]
