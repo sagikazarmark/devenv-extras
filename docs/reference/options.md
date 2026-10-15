@@ -310,6 +310,60 @@ null
 
 
 
+## dioxus.import
+
+
+
+Build a Cargo project with ` dx bundle `, for example to use it in ` outputs `.
+
+It takes the path to the project (the directory with Cargo.lock) and an attribute set of
+arguments, and returns a package with the bundle: ` public ` with the web app, and the server
+executable for fullstack apps. Dependencies are vendored from Cargo.lock, so the build runs
+offline, and dx uses the ` wasm-bindgen `, ` esbuild ` and ` wasm-opt ` packages, whether or not
+they are enabled in the shell, and the ` languages.tailwindcss ` package if it is enabled.
+dx reads Dioxus.toml as usual, except for ` out_dir `.
+
+The arguments are:
+
+ - ` platform `: the platform to bundle for, ` "web" ` by default. Platforms other than web need
+   packaging tools that may not work in the Nix sandbox.
+ - ` fullstack `: whether to also build the server. When null (the default), dx builds it when
+   the ` fullstack ` feature of ` dioxus ` is enabled.
+ - ` release `: build with ` --release ` (the default).
+ - ` buildFeatures ` and ` buildNoDefaultFeatures `: the cargo features to build with.
+ - ` dxFlags `: more flags for ` dx bundle `, such as ` [ "--base-path" "app" ] `.
+ - ` rustPlatform `: the ` rustPlatform ` to build with, instead of one with the devenv Rust toolchain.
+
+Other arguments, such as ` buildAndTestSubdir ` for a crate in a workspace subdirectory or
+` buildInputs ` for the server’s system libraries, are passed to ` rustPlatform.buildRustPackage `.
+
+The devenv Rust toolchain needs the wasm32-unknown-unknown target:
+
+```nix
+languages.rust = {
+  enable = true;
+  channel = "stable";
+  targets = [ "wasm32-unknown-unknown" ];
+};
+
+outputs.web = config.dioxus.import ./. { };
+```
+
+
+
+*Type:*
+function that evaluates to a(n) function that evaluates to a(n) package *(read only)*
+
+
+
+*Default:*
+a function that builds an app with ` dx bundle `
+
+*Declared by:*
+ - [modules/integrations/dioxus.nix](../../modules/integrations/dioxus.nix)
+
+
+
 ## dioxus.version
 
 
@@ -2592,7 +2646,7 @@ package
 
 
 
-The Cargo.lock to read the worker versions from.
+The Cargo.lock to read the worker and wasm-bindgen versions from.
 When null, Cargo.lock at the project root is used if it exists.
 
 
@@ -2607,6 +2661,78 @@ null or absolute path
 ```nix
 null
 ```
+
+*Declared by:*
+ - [modules/integrations/worker-build.nix](../../modules/integrations/worker-build.nix)
+
+
+
+## worker-build.esbuild.package
+
+
+
+The esbuild package that ` import ` builds with.
+
+
+
+*Type:*
+package
+
+
+
+*Default:*
+
+```nix
+pkgs.esbuild
+```
+
+*Declared by:*
+ - [modules/integrations/worker-build.nix](../../modules/integrations/worker-build.nix)
+
+
+
+## worker-build.import
+
+
+
+Build a Cargo project with worker-build, for example to use it in ` outputs `.
+
+It takes the path to the project (the directory with Cargo.lock) and an attribute set of
+arguments, and returns a package with the contents of worker-build’s ` build ` directory.
+Dependencies are vendored from Cargo.lock, so the build runs offline, and worker-build uses
+the ` wasm-bindgen `, ` esbuild ` and ` wasm-opt ` packages instead of downloading them.
+
+The arguments are:
+
+ - ` release `: build with ` --release ` (the default) or ` --dev `.
+ - ` buildFeatures ` and ` buildNoDefaultFeatures `: the cargo features to build with.
+ - ` workerBuildFlags `: more flags for worker-build, such as ` [ "--no-opt" ] `.
+ - ` rustPlatform `: the ` rustPlatform ` to build with, instead of one with the devenv Rust toolchain.
+
+Other arguments, such as ` buildAndTestSubdir ` for a crate in a workspace subdirectory or
+` buildInputs `, are passed to ` rustPlatform.buildRustPackage `.
+
+The devenv Rust toolchain needs the wasm32-unknown-unknown target:
+
+```nix
+languages.rust = {
+  enable = true;
+  channel = "stable";
+  targets = [ "wasm32-unknown-unknown" ];
+};
+
+outputs.worker = config.worker-build.import ./. { };
+```
+
+
+
+*Type:*
+function that evaluates to a(n) function that evaluates to a(n) package *(read only)*
+
+
+
+*Default:*
+a function that builds a worker with worker-build
 
 *Declared by:*
  - [modules/integrations/worker-build.nix](../../modules/integrations/worker-build.nix)
@@ -2632,6 +2758,77 @@ null or string
 
 *Default:*
 the version of ` worker ` in Cargo.lock, or null
+
+*Declared by:*
+ - [modules/integrations/worker-build.nix](../../modules/integrations/worker-build.nix)
+
+
+
+## worker-build.wasm-bindgen.package
+
+
+
+The wasm-bindgen-cli package that ` import ` builds with. Setting it overrides ` version `.
+
+
+
+*Type:*
+package
+
+
+
+*Default:*
+` wasm-bindgen-cli ` at ` version `, or ` pkgs.wasm-bindgen-cli `
+
+*Declared by:*
+ - [modules/integrations/worker-build.nix](../../modules/integrations/worker-build.nix)
+
+
+
+## worker-build.wasm-bindgen.version
+
+
+
+The wasm-bindgen-cli version that ` import ` builds with.
+The version to install. It must match the ` wasm-bindgen ` crate exactly.
+Defaults to the version of ` wasm-bindgen ` in Cargo.lock, if there is one.
+
+A version is installed from nixpkgs if it has it, otherwise from nixpkgs-multiverse,
+which needs the ` nixpkgs-multiverse ` input. When null, ` pkgs.wasm-bindgen-cli ` is installed.
+
+
+
+*Type:*
+null or string
+
+
+
+*Default:*
+the version of ` wasm-bindgen ` in Cargo.lock, or null
+
+*Declared by:*
+ - [modules/integrations/worker-build.nix](../../modules/integrations/worker-build.nix)
+
+
+
+## worker-build.wasm-opt.package
+
+
+
+The binaryen package that provides wasm-opt for ` import ` builds.
+
+
+
+*Type:*
+package
+
+
+
+*Default:*
+
+```nix
+pkgs.binaryen
+```
 
 *Declared by:*
  - [modules/integrations/worker-build.nix](../../modules/integrations/worker-build.nix)

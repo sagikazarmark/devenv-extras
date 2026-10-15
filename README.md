@@ -178,6 +178,50 @@ pin those the same way. Each tool also has a `package` option that overrides its
 version, and `dioxus.wasm-bindgen.enable`, `dioxus.esbuild.enable` and
 `dioxus.wasm-opt.enable` turn the extra tools off.
 
+`dioxus.enable` also enables `languages.rust` by default; set
+`languages.rust.enable = false` to use a toolchain from outside devenv. Building
+for the web needs the `wasm32-unknown-unknown` target, which the default
+`nixpkgs` channel cannot add, so devenv warns until the toolchain has it:
+
+```nix
+languages.rust = {
+  channel = "stable";
+  targets = [ "wasm32-unknown-unknown" ];
+};
+```
+
+`dioxus.import` builds an app with `dx bundle` as a Nix package, for devenv
+[outputs](https://devenv.sh/outputs/). Dependencies are vendored from
+`Cargo.lock` and `dx` uses the tools above (and the `languages.tailwindcss`
+package, if enabled), so the build runs offline:
+
+```nix
+{ config, ... }:
+
+{
+  dioxus.enable = true;
+
+  outputs.web = config.dioxus.import ./. { };
+}
+```
+
+`devenv build outputs.web` then builds the bundle: the web app in `public`, and
+for fullstack apps the `server` executable next to it. dx reads `Dioxus.toml` as
+usual. The second argument takes:
+
+- `platform` (default `"web"`). Other platforms need packaging tools that may
+  not work in the Nix sandbox.
+- `fullstack`: `true` or `false` to choose whether to build the server. By
+  default dx builds it when the `fullstack` feature of `dioxus` is enabled.
+- `release` (default `true`).
+- `buildFeatures` and `buildNoDefaultFeatures` for cargo features.
+- `dxFlags`: more flags for `dx bundle`.
+- `rustPlatform` to build without the devenv Rust toolchain.
+
+Other arguments go to `rustPlatform.buildRustPackage`, such as
+`buildAndTestSubdir` for a crate in a workspace subdirectory, or `buildInputs`
+for libraries the server links to.
+
 ### worker-build
 
 Add [worker-build](https://github.com/cloudflare/workers-rs), which builds Rust
@@ -192,6 +236,24 @@ worker-build.enable = true;
 same way as Dioxus: set `worker-build.cargoLock` to read another lockfile, and a
 version missing from nixpkgs comes from nixpkgs-multiverse. Without a lockfile,
 `pkgs.worker-build` is installed. `worker-build.package` overrides the version.
+
+Like Dioxus, `worker-build.enable` enables `languages.rust` by default and
+warns until the toolchain has the `wasm32-unknown-unknown` target.
+
+`worker-build.import` builds a worker the same way as `dioxus.import`, and
+returns the contents of worker-build's `build` directory:
+
+```nix
+outputs.worker = config.worker-build.import ./. { };
+```
+
+worker-build would download wasm-bindgen, esbuild and `wasm-opt`, so the build
+points it at `worker-build.wasm-bindgen.package` (matching `wasm-bindgen` in
+`Cargo.lock`), `worker-build.esbuild.package` and `worker-build.wasm-opt.package`
+instead. The second argument takes `release` (default `true`; `false` builds
+with `--dev`), `buildFeatures`, `buildNoDefaultFeatures`, `rustPlatform`, and
+`workerBuildFlags` for more worker-build flags. Other arguments go to
+`rustPlatform.buildRustPackage`.
 
 ### Tailwind CSS
 

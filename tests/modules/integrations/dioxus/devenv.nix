@@ -1,4 +1,9 @@
-{ config, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 {
   dioxus.enable = true;
@@ -37,6 +42,14 @@
         pkgs.binaryen
       ];
       message = "dioxus.enable should install dx, wasm-bindgen-cli, esbuild and binaryen.";
+    }
+    {
+      assertion = config.languages.rust.enable;
+      message = "dioxus.enable should enable languages.rust.";
+    }
+    {
+      assertion = lib.any (lib.hasInfix "wasm32-unknown-unknown") config.warnings;
+      message = "dioxus should warn when the Rust toolchain does not have the wasm32-unknown-unknown target.";
     }
   ];
 }

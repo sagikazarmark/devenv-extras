@@ -1,0 +1,14 @@
+[package]
+name = "hello-fullstack"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+dioxus = { version = "=0.7.10", features = ["fullstack"] }
+
+[features]
+web = ["dioxus/web"]
+server = ["dioxus/server"]
+
+[profile.release]
+opt-level = "s"

@@ -1,4 +1,9 @@
-{ config, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 {
   worker-build.enable = true;
@@ -15,6 +20,14 @@
     {
       assertion = builtins.elem pkgs.worker-build config.packages;
       message = "worker-build.enable should install worker-build.";
+    }
+    {
+      assertion = config.languages.rust.enable;
+      message = "worker-build.enable should enable languages.rust.";
+    }
+    {
+      assertion = lib.any (lib.hasInfix "wasm32-unknown-unknown") config.warnings;
+      message = "worker-build should warn when the Rust toolchain does not have the wasm32-unknown-unknown target.";
     }
   ];
 }

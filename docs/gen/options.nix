@@ -61,6 +61,18 @@ let
             visible = false;
           };
 
+          options.warnings = lib.mkOption {
+            type = lib.types.listOf lib.types.str;
+            default = [ ];
+            visible = false;
+          };
+
+          options.languages.rust = lib.mkOption {
+            type = lib.types.attrsOf lib.types.anything;
+            default = { };
+            visible = false;
+          };
+
           options.processes = lib.mkOption {
             type = lib.types.attrsOf (
               lib.types.submodule (

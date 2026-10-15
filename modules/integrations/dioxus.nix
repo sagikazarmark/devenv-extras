@@ -21,6 +21,8 @@ let
   inherit (versions) versioned versionDescription sourceDescription;
 
   lockedVersion = versions.lockedVersion cfg.cargoLock;
+
+  rust = import ../lib/rust.nix { inherit pkgs lib config; };
 in
 {
   options.dioxus = {
@@ -121,6 +123,94 @@ in
         description = "The binaryen package that provides wasm-opt. Setting it overrides `version`.";
       };
     };
+
+    import = lib.mkOption {
+      type = lib.types.functionTo (lib.types.functionTo lib.types.package);
+      readOnly = true;
+      default =
+        path:
+        {
+          platform ? "web",
+          fullstack ? null,
+          release ? true,
+          dxFlags ? [ ],
+          ...
+        }@args:
+        rust.importCargo
+          {
+            name = "dioxus.import";
+
+            # The Nix build of dx finds these on PATH instead of downloading them.
+            nativeBuildInputs = [
+              cfg.package
+              cfg.wasm-bindgen.package
+              cfg.esbuild.package
+              cfg.wasm-opt.package
+            ]
+            # dx runs Tailwind CSS when the app uses it.
+            ++ lib.optional config.languages.tailwindcss.enable config.languages.tailwindcss.package;
+
+            buildCommand = "dx bundle ${
+              lib.escapeShellArgs (
+                [
+                  "--platform"
+                  platform
+                ]
+                ++ lib.optional release "--release"
+                ++ lib.optional (fullstack != null) "--fullstack=${lib.boolToString fullstack}"
+                ++ rust.featureFlags args
+                ++ dxFlags
+              )
+            } --out-dir dist";
+            installCommand = ''cp -R dist "$out"'';
+          }
+          path
+          (
+            builtins.removeAttrs args [
+              "platform"
+              "fullstack"
+              "release"
+              "dxFlags"
+            ]
+          );
+      defaultText = lib.literalMD "a function that builds an app with `dx bundle`";
+      description = ''
+        Build a Cargo project with `dx bundle`, for example to use it in `outputs`.
+
+        It takes the path to the project (the directory with Cargo.lock) and an attribute set of
+        arguments, and returns a package with the bundle: `public` with the web app, and the server
+        executable for fullstack apps. Dependencies are vendored from Cargo.lock, so the build runs
+        offline, and dx uses the `wasm-bindgen`, `esbuild` and `wasm-opt` packages, whether or not
+        they are enabled in the shell, and the `languages.tailwindcss` package if it is enabled.
+        dx reads Dioxus.toml as usual, except for `out_dir`.
+
+        The arguments are:
+
+        - `platform`: the platform to bundle for, `"web"` by default. Platforms other than web need
+          packaging tools that may not work in the Nix sandbox.
+        - `fullstack`: whether to also build the server. When null (the default), dx builds it when
+          the `fullstack` feature of `dioxus` is enabled.
+        - `release`: build with `--release` (the default).
+        - `buildFeatures` and `buildNoDefaultFeatures`: the cargo features to build with.
+        - `dxFlags`: more flags for `dx bundle`, such as `[ "--base-path" "app" ]`.
+        - `rustPlatform`: the `rustPlatform` to build with, instead of one with the devenv Rust toolchain.
+
+        Other arguments, such as `buildAndTestSubdir` for a crate in a workspace subdirectory or
+        `buildInputs` for the server's system libraries, are passed to `rustPlatform.buildRustPackage`.
+
+        The devenv Rust toolchain needs the wasm32-unknown-unknown target:
+
+        ```nix
+        languages.rust = {
+          enable = true;
+          channel = "stable";
+          targets = [ "wasm32-unknown-unknown" ];
+        };
+
+        outputs.web = config.dioxus.import ./. { };
+        ```
+      '';
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -130,5 +220,9 @@ in
     ++ lib.optional cfg.wasm-bindgen.enable cfg.wasm-bindgen.package
     ++ lib.optional cfg.esbuild.enable cfg.esbuild.package
     ++ lib.optional cfg.wasm-opt.enable cfg.wasm-opt.package;
+
+    languages.rust.enable = lib.mkDefault true;
+
+    warnings = rust.wasmTargetWarnings "dx (for the web platform)";
   };
 }
