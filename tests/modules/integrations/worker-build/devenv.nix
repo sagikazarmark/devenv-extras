@@ -29,5 +29,14 @@
       assertion = lib.any (lib.hasInfix "wasm32-unknown-unknown") config.warnings;
       message = "worker-build should warn when the Rust toolchain does not have the wasm32-unknown-unknown target.";
     }
+    {
+      # Only evaluated, not built.
+      assertion =
+        let
+          member = config.worker-build.import ./workspace { buildAndTestSubdir = "member"; };
+        in
+        member.pname == "member" && member.version == "1.2.3";
+      message = "worker-build.import should read a version inherited from the workspace.";
+    }
   ];
 }

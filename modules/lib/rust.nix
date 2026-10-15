@@ -63,18 +63,28 @@ in
           rustc = toolchain;
         });
 
-      cargoToml =
-        let
-          manifest = path + "/${args.buildAndTestSubdir or "."}/Cargo.toml";
-        in
+      readManifest =
+        manifest:
         if builtins.pathExists manifest then builtins.fromTOML (builtins.readFile manifest) else { };
+
+      cargoToml = readManifest (path + "/${args.buildAndTestSubdir or "."}/Cargo.toml");
+
+      # A workspace member can inherit its version (`version.workspace = true`) from the root manifest.
+      version =
+        let
+          ownVersion = cargoToml.package.version or null;
+        in
+        if builtins.isString ownVersion then
+          ownVersion
+        else
+          (readManifest (path + "/Cargo.toml")).workspace.package.version or "0.0.0";
 
       crateDir = lib.escapeShellArg (args.buildAndTestSubdir or ".");
     in
     rustPlatform.buildRustPackage (
       {
         pname = cargoToml.package.name or (baseNameOf (toString path));
-        version = cargoToml.package.version or "0.0.0";
+        inherit version;
 
         # Leave out devenv state and build outputs, so importing ./. does not copy them to the store.
         src = lib.cleanSourceWith {

@@ -247,8 +247,10 @@ usual. The second argument takes:
 
 - `platform` (default `"web"`). Other platforms need packaging tools that may
   not work in the Nix sandbox.
-- `fullstack`: `true` or `false` to choose whether to build the server. By
-  default dx builds it when the `fullstack` feature of `dioxus` is enabled.
+- `fullstack = true` builds the server even when the `fullstack` feature of
+  `dioxus` is not enabled. dx always builds it when that feature is enabled,
+  either on the `dioxus` dependency or through a crate feature in
+  `buildFeatures`, so keep it out of those for a client-only bundle.
 - `release` (default `true`).
 - `buildFeatures` and `buildNoDefaultFeatures` for cargo features.
 - `dxFlags`: more flags for `dx bundle`.

@@ -170,7 +170,7 @@ in
         path:
         {
           platform ? "web",
-          fullstack ? null,
+          fullstack ? false,
           release ? true,
           dxFlags ? [ ],
           ...
@@ -196,7 +196,8 @@ in
                   platform
                 ]
                 ++ lib.optional release "--release"
-                ++ lib.optional (fullstack != null) "--fullstack=${lib.boolToString fullstack}"
+                # dx has no way to turn the server off: --fullstack=false is the same as leaving it out.
+                ++ lib.optional fullstack "--fullstack"
                 ++ rust.featureFlags args
                 ++ dxFlags
               )
@@ -227,8 +228,9 @@ in
 
         - `platform`: the platform to bundle for, `"web"` by default. Platforms other than web need
           packaging tools that may not work in the Nix sandbox.
-        - `fullstack`: whether to also build the server. When null (the default), dx builds it when
-          the `fullstack` feature of `dioxus` is enabled.
+        - `fullstack`: build the server as well, even when the `fullstack` feature of `dioxus` is not
+          enabled. dx always builds it when that feature is enabled, either on the `dioxus` dependency
+          or through a crate feature in `buildFeatures`, so leave it out of those for a client-only bundle.
         - `release`: build with `--release` (the default).
         - `buildFeatures` and `buildNoDefaultFeatures`: the cargo features to build with.
         - `dxFlags`: more flags for `dx bundle`, such as `[ "--base-path" "app" ]`.

@@ -51,5 +51,12 @@
       assertion = lib.any (lib.hasInfix "wasm32-unknown-unknown") config.warnings;
       message = "dioxus should warn when the Rust toolchain does not have the wasm32-unknown-unknown target.";
     }
+    {
+      # Only evaluated, not built.
+      assertion =
+        lib.hasInfix "--fullstack" (config.dioxus.import ./. { fullstack = true; }).buildPhase
+        && !lib.hasInfix "--fullstack" (config.dioxus.import ./. { }).buildPhase;
+      message = "dioxus.import should pass --fullstack only for fullstack = true.";
+    }
   ];
 }
