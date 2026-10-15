@@ -2990,3 +2990,298 @@ pkgs.binaryen
  - [modules/integrations/worker-build.nix](../../modules/integrations/worker-build.nix)
 
 
+
+## wrangler.enable
+
+
+
+Whether to enable Wrangler, the Cloudflare Workers CLI.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [modules/integrations/wrangler.nix](../../modules/integrations/wrangler.nix)
+
+
+
+## wrangler.package
+
+
+
+The wrangler package to use.
+
+
+
+*Type:*
+package
+
+
+
+*Default:*
+
+```nix
+pkgs.wrangler
+```
+
+*Declared by:*
+ - [modules/integrations/wrangler.nix](../../modules/integrations/wrangler.nix)
+
+
+
+## wrangler.dev
+
+
+
+Workers to run with ` wrangler dev `, each in a ` wrangler-<name> ` process.
+Each runs in its own session, and the sessions reach each other through the dev registry.
+
+
+
+*Type:*
+attribute set of (submodule)
+
+
+
+*Default:*
+
+```nix
+{ }
+```
+
+
+
+*Example:*
+
+```nix
+{
+  api = { };
+  app.directory = "workers/app";
+}
+
+```
+
+*Declared by:*
+ - [modules/integrations/wrangler.nix](../../modules/integrations/wrangler.nix)
+
+
+
+## wrangler.dev.\<name>.config
+
+
+
+The Wrangler configuration file, relative to ` directory `.
+When null, Wrangler finds ` wrangler.toml `, ` wrangler.json ` or ` wrangler.jsonc ` itself.
+
+
+
+*Type:*
+null or string
+
+
+
+*Default:*
+
+```nix
+null
+```
+
+
+
+*Example:*
+
+```nix
+"wrangler.dev.toml"
+```
+
+*Declared by:*
+ - [modules/integrations/wrangler.nix](../../modules/integrations/wrangler.nix)
+
+
+
+## wrangler.dev.\<name>.directory
+
+
+
+The directory of the worker, relative to the project root.
+Wrangler runs there (with ` --cwd `), so its configuration and custom build work unchanged.
+
+
+
+*Type:*
+string
+
+
+
+*Default:*
+the name of the worker
+
+
+
+*Example:*
+
+```nix
+"workers/api"
+```
+
+*Declared by:*
+ - [modules/integrations/wrangler.nix](../../modules/integrations/wrangler.nix)
+
+
+
+## wrangler.dev.\<name>.extraArgs
+
+
+
+More arguments for ` wrangler dev `.
+
+
+
+*Type:*
+list of string
+
+
+
+*Default:*
+
+```nix
+[ ]
+```
+
+
+
+*Example:*
+
+```nix
+[
+  "--env"
+  "staging"
+]
+```
+
+*Declared by:*
+ - [modules/integrations/wrangler.nix](../../modules/integrations/wrangler.nix)
+
+
+
+## wrangler.dev.\<name>.host
+
+
+
+The address the worker listens on.
+
+
+
+*Type:*
+string
+
+
+
+*Default:*
+
+```nix
+"127.0.0.1"
+```
+
+
+
+*Example:*
+
+```nix
+"0.0.0.0"
+```
+
+*Declared by:*
+ - [modules/integrations/wrangler.nix](../../modules/integrations/wrangler.nix)
+
+
+
+## wrangler.dev.\<name>.inspectorPort
+
+
+
+The base port for the devtools inspector.
+The actual port is allocated by devenv and may differ.
+
+
+
+*Type:*
+16 bit unsigned integer; between 0 and 65535 (both inclusive)
+
+
+
+*Default:*
+9229, plus the position of the worker in ` wrangler.dev `
+
+*Declared by:*
+ - [modules/integrations/wrangler.nix](../../modules/integrations/wrangler.nix)
+
+
+
+## wrangler.dev.\<name>.port
+
+
+
+The base port the worker listens on.
+The actual port is allocated by devenv and may differ;
+` config.processes."wrangler-<name>".ports.http.value ` has it.
+
+
+
+*Type:*
+16 bit unsigned integer; between 0 and 65535 (both inclusive)
+
+
+
+*Default:*
+8787, plus the position of the worker in ` wrangler.dev `
+
+*Declared by:*
+ - [modules/integrations/wrangler.nix](../../modules/integrations/wrangler.nix)
+
+
+
+## wrangler.registry
+
+
+
+The dev registry ` wrangler dev ` sessions use to find each other, for service bindings,
+Durable Objects and tail consumers across workers. It is exported as ` WRANGLER_REGISTRY_PATH `.
+The default keeps the workers of this project apart from those of others;
+null uses Wrangler’s global registry.
+
+
+
+*Type:*
+null or string
+
+
+
+*Default:*
+
+```nix
+"${config.devenv.state}/wrangler/registry"
+```
+
+*Declared by:*
+ - [modules/integrations/wrangler.nix](../../modules/integrations/wrangler.nix)
+
+

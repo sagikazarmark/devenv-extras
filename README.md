@@ -33,6 +33,7 @@ Then enable the modules you need in `devenv.nix`:
   # dagger.enable = true;
   # dioxus.enable = true;
   # worker-build.enable = true;
+  # wrangler.enable = true;
   # services.litellm.enable = true;
   # services.ollama.enable = true;
   # services.openbao.enable = true;
@@ -272,6 +273,39 @@ instead. The second argument takes `release` (default `true`; `false` builds
 with `--dev`), `buildFeatures`, `buildNoDefaultFeatures`, `rustPlatform`, and
 `workerBuildFlags` for more worker-build flags. Other arguments go to
 `rustPlatform.buildRustPackage`.
+
+### Wrangler
+
+Add [Wrangler](https://developers.cloudflare.com/workers/wrangler/), and run
+workers locally with `wrangler dev`:
+
+```nix
+wrangler = {
+  enable = true;
+  dev = {
+    api = { };                          # the worker in ./api
+    app.directory = "workers/app";
+  };
+};
+```
+
+Each worker runs in its own `wrangler-<name>` process, with `wrangler --cwd`
+set to its directory, so its configuration and custom build (such as
+`worker-build`) work unchanged. Ports are allocated from 8787 for HTTP and 9229
+for the inspector, counting up in the order of the workers; set `port` and
+`inspectorPort` to change them, `config` for a configuration file other than
+`wrangler.toml`, `wrangler.json` or `wrangler.jsonc`, and `extraArgs` for more
+`wrangler dev` flags.
+
+The sessions reach each other through Wrangler's dev registry: a worker can call
+another through a service binding, or use a Durable Object defined in another
+with `script_name`. The registry is in the devenv state directory, so workers of
+other projects stay apart; `WRANGLER_REGISTRY_PATH` points to it in the shell as
+well, and `wrangler.registry = null` uses Wrangler's global one.
+
+With `worker-build.enable`, the processes point worker-build at esbuild and
+`wasm-opt` from Nix, and at wasm-bindgen too when its version is known from
+`Cargo.lock`, instead of downloading them.
 
 ### Tailwind CSS
 
