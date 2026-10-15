@@ -209,6 +209,23 @@ The dev server listens on `127.0.0.1` at a port allocated from 8080; set
 `dioxus.serve.host` and `dioxus.serve.port` to change them.
 `config.processes.dioxus.ports.http.value` has the allocated port.
 
+For HTTPS, use the [devenv proxy](https://devenv.sh/processes/), which serves the
+app with a certificate from the project's mkcert certificate authority. Hot
+reloading works through it, because the app connects to the dev server's
+WebSocket on the page's own host, with `wss:` on HTTPS pages:
+
+```nix
+process.proxy.enable = true;
+
+processes.dioxus.proxy = {
+  hostname = "app.localhost";
+  https.enable = true;
+};
+```
+
+When the project has no certificate authority yet, devenv runs `mkcert -install`,
+which adds it to the system trust stores so browsers accept the certificate.
+
 `dioxus.import` builds an app with `dx bundle` as a Nix package, for devenv
 [outputs](https://devenv.sh/outputs/). Dependencies are vendored from
 `Cargo.lock` and `dx` uses the tools above (and the `languages.tailwindcss`
@@ -306,6 +323,23 @@ well, and `wrangler.registry = null` uses Wrangler's global one.
 With `worker-build.enable`, the processes point worker-build at esbuild and
 `wasm-opt` from Nix, and at wasm-bindgen too when its version is known from
 `Cargo.lock`, instead of downloading them.
+
+For HTTPS, use the [devenv proxy](https://devenv.sh/processes/) the same way as
+for Dioxus. Without a `hostname`, a worker's URL is
+`wrangler-<name>.<project>.localhost`, after its process; its inspector gets
+`inspector.` in front of that:
+
+```nix
+process.proxy.enable = true;
+
+processes.wrangler-app.proxy = {
+  hostname = "app.localhost";
+  https.enable = true;
+};
+```
+
+The proxy terminates TLS: `wrangler dev` still receives HTTP, and devenv adds
+`X-Forwarded-Proto: https` to HTTPS requests.
 
 ### Tailwind CSS
 
