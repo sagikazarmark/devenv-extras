@@ -63,7 +63,7 @@ in
             if version == null || pkgs.lib.versionAtLeast version "2.3.2" then
               [ "devenv:processes:restate" ]
             else
-              [ ];
+              null;
         in
         greeter.wantedBy == expected && worker.wantedBy == expected;
       message = "Registration should run when Restate starts.";
