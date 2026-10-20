@@ -1,0 +1,16 @@
+inputs:
+  nixpkgs:
+    url: github:cachix/devenv-nixpkgs/rolling
+  # Upstream pkgs.restate is unfree and slow to build from source: test with release binaries.
+  nix-restate:
+    url: github:sagikazarmark/nix-restate
+    inputs:
+      nixpkgs:
+        follows: nixpkgs
+  devenv-extras:
+    url: github:sagikazarmark/devenv-extras
+
+imports:
+  - devenv-extras/modules
+
+strict_ports: true
