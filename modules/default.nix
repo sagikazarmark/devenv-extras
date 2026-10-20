@@ -10,6 +10,7 @@
     ./services/litellm.nix
     ./services/ollama.nix
     ./services/openbao.nix
+    ./services/restate.nix
     ./services/sandbox-agent.nix
   ];
 }

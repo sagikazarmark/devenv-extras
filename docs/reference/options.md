@@ -2088,6 +2088,506 @@ string
 
 
 
+## services.restate.enable
+
+
+
+Whether to enable Restate server for durable execution.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [modules/services/restate.nix](../../modules/services/restate.nix)
+
+
+
+## services.restate.package
+
+
+
+Which package of Restate to use. It must provide ` restate-server ` and ` restate `.
+
+Restate is unfree, and nixpkgs builds it from source, which takes a long time.
+[nix-restate](https://github.com/sagikazarmark/nix-restate) provides
+` restate-bin `, built from the official release binaries.
+
+
+
+*Type:*
+package
+
+
+
+*Default:*
+
+```nix
+pkgs.restate
+```
+
+
+
+*Example:*
+
+```nix
+inputs.nix-restate.packages.${pkgs.stdenv.hostPlatform.system}.restate-bin
+```
+
+*Declared by:*
+ - [modules/services/restate.nix](../../modules/services/restate.nix)
+
+
+
+## services.restate.adminPort
+
+
+
+The base port the Restate admin API and web UI listen on.
+The actual port is allocated by devenv and may differ;
+` RESTATE_ADMIN_URL ` points to it.
+
+
+
+*Type:*
+16 bit unsigned integer; between 0 and 65535 (both inclusive)
+
+
+
+*Default:*
+
+```nix
+9070
+```
+
+*Declared by:*
+ - [modules/services/restate.nix](../../modules/services/restate.nix)
+
+
+
+## services.restate.deployments
+
+
+
+Service deployments to register once Restate is ready,
+each with a ` devenv:restate:register-<name> ` task.
+
+Deployments are registered when Restate starts.
+Register them again with ` restate deployments register --force <uri> ` after changing services.
+
+
+
+*Type:*
+attribute set of (submodule)
+
+
+
+*Default:*
+
+```nix
+{ }
+```
+
+
+
+*Example:*
+
+```nix
+{
+  greeter = {
+    uri = "http://127.0.0.1:9080";
+    after = [ "devenv:processes:greeter" ];
+  };
+}
+
+```
+
+*Declared by:*
+ - [modules/services/restate.nix](../../modules/services/restate.nix)
+
+
+
+## services.restate.deployments.\<name>.after
+
+
+
+Processes or tasks to wait for before registering the deployment,
+such as the process serving it.
+Process dependencies wait for the process to be ready,
+so the process needs a ready probe or allocated ports.
+
+
+
+*Type:*
+list of string
+
+
+
+*Default:*
+
+```nix
+[ ]
+```
+
+
+
+*Example:*
+
+```nix
+[
+  "devenv:processes:greeter"
+]
+```
+
+*Declared by:*
+ - [modules/services/restate.nix](../../modules/services/restate.nix)
+
+
+
+## services.restate.deployments.\<name>.force
+
+
+
+Whether to replace an existing deployment at the same endpoint (` --force `),
+so that changed services are picked up.
+Without it, registering an endpoint that is already registered changes nothing.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [modules/services/restate.nix](../../modules/services/restate.nix)
+
+
+
+## services.restate.deployments.\<name>.headers
+
+
+
+Additional headers sent to the endpoint during discovery.
+
+
+
+*Type:*
+attribute set of string
+
+
+
+*Default:*
+
+```nix
+{ }
+```
+
+
+
+*Example:*
+
+```nix
+{
+  Authorization = "Bearer secret";
+}
+```
+
+*Declared by:*
+ - [modules/services/restate.nix](../../modules/services/restate.nix)
+
+
+
+## services.restate.deployments.\<name>.http1
+
+
+
+Whether to use HTTP/1.1 for discovery (` --use-http1.1 `),
+for endpoints that do not support HTTP/2, such as ` wrangler dev `.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+*Declared by:*
+ - [modules/services/restate.nix](../../modules/services/restate.nix)
+
+
+
+## services.restate.deployments.\<name>.uri
+
+
+
+The endpoint of the deployment, as reachable from the Restate server.
+
+
+
+*Type:*
+string
+
+
+
+*Example:*
+
+```nix
+"http://127.0.0.1:9080"
+```
+
+*Declared by:*
+ - [modules/services/restate.nix](../../modules/services/restate.nix)
+
+
+
+## services.restate.environmentVariables
+
+
+
+Additional environment variables for the Restate server process.
+` RESTATE_ `-prefixed variables override configuration entries.
+
+
+
+*Type:*
+attribute set of string
+
+
+
+*Default:*
+
+```nix
+{ }
+```
+
+
+
+*Example:*
+
+```nix
+{
+  RUST_LOG = "info,restate=debug";
+}
+```
+
+*Declared by:*
+ - [modules/services/restate.nix](../../modules/services/restate.nix)
+
+
+
+## services.restate.host
+
+
+
+The host address the Restate server listens on.
+Wrap IPv6 addresses in brackets.
+
+
+
+*Type:*
+string
+
+
+
+*Default:*
+
+```nix
+"127.0.0.1"
+```
+
+
+
+*Example:*
+
+```nix
+"0.0.0.0"
+```
+
+*Declared by:*
+ - [modules/services/restate.nix](../../modules/services/restate.nix)
+
+
+
+## services.restate.nodeName
+
+
+
+The name of the Restate node.
+
+Restate defaults to the hostname, but the name must not change
+once the node stored data, so the module sets a fixed one.
+Changing it starts over with an empty node.
+
+
+
+*Type:*
+string
+
+
+
+*Default:*
+
+```nix
+"devenv"
+```
+
+*Declared by:*
+ - [modules/services/restate.nix](../../modules/services/restate.nix)
+
+
+
+## services.restate.nodePort
+
+
+
+The base port Restate listens on for node-to-node communication.
+The actual port is allocated by devenv and may differ;
+` RESTATECTL_ADDRESS ` points to it.
+
+
+
+*Type:*
+16 bit unsigned integer; between 0 and 65535 (both inclusive)
+
+
+
+*Default:*
+
+```nix
+5122
+```
+
+*Declared by:*
+ - [modules/services/restate.nix](../../modules/services/restate.nix)
+
+
+
+## services.restate.port
+
+
+
+The base port the Restate ingress listens on.
+The actual port is allocated by devenv and may differ;
+` RESTATE_INGRESS_URL ` points to it.
+
+
+
+*Type:*
+16 bit unsigned integer; between 0 and 65535 (both inclusive)
+
+
+
+*Default:*
+
+```nix
+8080
+```
+
+*Declared by:*
+ - [modules/services/restate.nix](../../modules/services/restate.nix)
+
+
+
+## services.restate.settings
+
+
+
+Restate server configuration, merged recursively over the generated configuration.
+See [https://docs.restate.dev/references/server-config](https://docs.restate.dev/references/server-config) for available settings.
+
+The generated configuration listens on TCP only, disables telemetry,
+and provisions 4 partitions with 512 MiB of RocksDB memory.
+Partitions are only provisioned on the first start: remove ` stateDir ` to change them.
+
+
+
+*Type:*
+TOML value
+
+
+
+*Default:*
+
+```nix
+{ }
+```
+
+
+
+*Example:*
+
+```nix
+{
+  default-journal-retention = "7d";
+  log-filter = "warn,restate=debug";
+  worker = {
+    invoker = {
+      inactivity-timeout = "5m";
+    };
+  };
+}
+```
+
+*Declared by:*
+ - [modules/services/restate.nix](../../modules/services/restate.nix)
+
+
+
+## services.restate.stateDir
+
+
+
+The directory Restate stores its data in.
+Node data is kept in a subdirectory named after ` nodeName `.
+
+
+
+*Type:*
+string
+
+
+
+*Default:*
+
+```nix
+"${config.devenv.state}/restate"
+```
+
+*Declared by:*
+ - [modules/services/restate.nix](../../modules/services/restate.nix)
+
+
+
 ## services.sandbox-agent.enable
 
 
@@ -2434,8 +2934,6 @@ pkgs.vale
 
 ## vale.config.copyMode
 
-
-
 How to materialize settings as a configuration file. Has no effect
 when settings is null. ` copy ` overwrites a writable file on shell
 entry, and ` symlink ` links it to the read-only Nix store. Starter
@@ -2781,6 +3279,8 @@ true
 
 
 ## worker-build.package
+
+
 
 The worker-build package. Setting it overrides ` version `.
 

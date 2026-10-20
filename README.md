@@ -37,6 +37,7 @@ Then enable the modules you need in `devenv.nix`:
   # services.litellm.enable = true;
   # services.ollama.enable = true;
   # services.openbao.enable = true;
+  # services.restate.enable = true;
   # services.sandbox-agent.enable = true;
 }
 ```
@@ -527,6 +528,97 @@ env.BAO_ADDR = "https://openbao.localhost";
 `VAULT_ADDR` and `VAULT_TOKEN` follow `BAO_ADDR` and `BAO_TOKEN`. If the
 certificate authority is not trusted by the system, also set
 `env.BAO_CACERT = "${config.env.DEVENV_STATE}/mkcert/rootCA.pem"`.
+
+### Restate
+
+Run a [Restate](https://restate.dev/) server with `devenv up`.
+
+Restate is unfree, and nixpkgs builds it from source, which takes a long time.
+[nix-restate](https://github.com/sagikazarmark/nix-restate) packages the official
+release binaries as `restate-bin`. Add it to `devenv.yaml`:
+
+```yaml
+inputs:
+  nix-restate:
+    url: github:sagikazarmark/nix-restate
+    inputs:
+      nixpkgs:
+        follows: nixpkgs
+```
+
+Then enable the service with that package:
+
+```nix
+{ pkgs, inputs, ... }:
+
+{
+  services.restate = {
+    enable = true;
+    package = inputs.nix-restate.packages.${pkgs.stdenv.hostPlatform.system}.restate-bin;
+  };
+}
+```
+
+The default, `pkgs.restate`, requires `nixpkgs.allow_unfree: true` (or
+`nixpkgs.permitted_unfree_packages: [ restate ]`) in `devenv.yaml`.
+
+The ingress port is allocated from `services.restate.port` (default `8080`), the
+admin API from `services.restate.adminPort` (default `9070`) and node-to-node
+communication from `services.restate.nodePort` (default `5122`). The shell exports
+`RESTATE_ADMIN_URL`, `RESTATE_INGRESS_URL` and `RESTATECTL_ADDRESS`, so `restate`
+and `restatectl` work without extra configuration. It also sets
+`RESTATE_ENVIRONMENT=local`, so that a CLI environment selected in
+`~/.config/restate`, such as a Restate Cloud one, does not apply to the managed
+server. The web UI is served at `$RESTATE_ADMIN_URL/ui`.
+
+Data is stored in `.devenv/state/restate`, under a fixed node name
+(`services.restate.nodeName`, default `devenv`): Restate defaults to the hostname,
+and the node's data becomes unusable when it changes. The server listens on TCP only, because
+Unix sockets created under the data directory easily exceed the socket path length
+limit. Telemetry is disabled, and the server provisions 4 partitions with 512 MiB
+of RocksDB memory instead of the production defaults. Use
+`services.restate.settings` for any other
+[server configuration](https://docs.restate.dev/references/server-config):
+
+```nix
+services.restate.settings = {
+  default-journal-retention = "7d";
+  worker.invoker.inactivity-timeout = "5m";
+};
+```
+
+Partitions are only provisioned on the first start: remove the data directory to
+change them.
+
+Register service deployments once Restate and the processes serving them are ready:
+
+```nix
+{ config, ... }:
+
+{
+  processes.greeter = {
+    exec = "npm run dev";
+    ports.http.allocate = 9080;
+    env.PORT = toString config.processes.greeter.ports.http.value;
+  };
+
+  services.restate.deployments.greeter = {
+    uri = "http://127.0.0.1:${toString config.processes.greeter.ports.http.value}";
+    after = [ "devenv:processes:greeter" ];
+  };
+}
+```
+
+Each deployment is registered by a `devenv:restate:register-<name>` task with
+`restate deployments register`, replacing an earlier registration of the same
+endpoint (disable with `force = false`). A process in `after` needs a
+[ready probe](https://devenv.sh/processes/#ready-probes) or allocated ports.
+Registration runs when Restate starts: after changing services, register them
+again with `restate deployments register --force <uri>`. Set `http1 = true` for
+endpoints that only support HTTP/1.1, such as `wrangler dev`.
+
+The client variables are defaults, so you can point them at the
+[devenv proxy](https://devenv.sh/processes/), like with OpenBao.
 
 ### Reference
 
