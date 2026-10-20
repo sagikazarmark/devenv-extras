@@ -590,8 +590,9 @@ Each deployment is registered by a `devenv:restate:register-<name>` task with
 endpoint (disable with `force = false`). A process in `after` needs a
 [ready probe](https://devenv.sh/processes/#ready-probes) or allocated ports.
 Registration runs when Restate starts: after changing services, register them
-again with `restate deployments register --force <uri>`. Set `http1 = true` for
-endpoints that only support HTTP/1.1, such as `wrangler dev`.
+again with `restate deployments register --force <uri>`. Before devenv 2.3.2,
+`devenv up` skips tasks that run after a process: use `devenv up --mode all`.
+Set `http1 = true` for endpoints that only support HTTP/1.1, such as `wrangler dev`.
 
 The client variables are defaults, so you can point them at the
 [devenv proxy](https://devenv.sh/processes/), like with OpenBao.

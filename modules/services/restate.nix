@@ -14,6 +14,10 @@ let
   restateServer = lib.getExe' cfg.package "restate-server";
   curl = lib.getExe pkgs.curl;
 
+  # tasks.*.wantedBy requires devenv 2.3.2 or newer.
+  cliVersion = config.devenv.cli.version or null;
+  supportsWantedBy = cliVersion == null || lib.versionAtLeast cliVersion "2.3.2";
+
   ingressPort = config.processes.restate.ports.http.value;
   adminPort = config.processes.restate.ports.admin.value;
   nodePort = config.processes.restate.ports.node.value;
@@ -272,7 +276,8 @@ in
         Service deployments to register once Restate is ready,
         each with a `devenv:restate:register-<name>` task.
 
-        Deployments are registered when Restate starts.
+        Deployments are registered when Restate starts (with devenv 2.3.2 or newer;
+        run `devenv up --mode all` with older versions).
         Register them again with `restate deployments register --force <uri>` after changing services.
       '';
     };
@@ -319,7 +324,8 @@ in
         exec = registerCommand deployment;
         env = cliEnv;
         after = [ "devenv:processes:restate@ready" ] ++ deployment.after;
-        wantedBy = [ "devenv:processes:restate" ];
+        # Without it, `devenv up` skips tasks that run after a process.
+        wantedBy = lib.mkIf supportsWantedBy [ "devenv:processes:restate" ];
       }
     ) cfg.deployments;
   };

@@ -1953,7 +1953,8 @@ The actual port is allocated by devenv and may differ;
 Service deployments to register once Restate is ready,
 each with a ` devenv:restate:register-<name> ` task.
 
-Deployments are registered when Restate starts.
+Deployments are registered when Restate starts (with devenv 2.3.2 or newer;
+run ` devenv up --mode all ` with older versions).
 Register them again with ` restate deployments register --force <uri> ` after changing services.
 
 

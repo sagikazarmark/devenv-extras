@@ -55,9 +55,17 @@ in
       message = "Registration should wait for Restate.";
     }
     {
+      # tasks.*.wantedBy requires devenv 2.3.2 or newer.
       assertion =
-        greeter.wantedBy == [ "devenv:processes:restate" ]
-        && worker.wantedBy == [ "devenv:processes:restate" ];
+        let
+          version = config.devenv.cli.version;
+          expected =
+            if version == null || pkgs.lib.versionAtLeast version "2.3.2" then
+              [ "devenv:processes:restate" ]
+            else
+              [ ];
+        in
+        greeter.wantedBy == expected && worker.wantedBy == expected;
       message = "Registration should run when Restate starts.";
     }
     {
