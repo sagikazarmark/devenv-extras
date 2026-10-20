@@ -2294,6 +2294,11 @@ The generated configuration listens on TCP only, disables telemetry,
 and provisions 4 partitions with 512 MiB of RocksDB memory.
 Partitions are only provisioned on the first start: remove ` stateDir ` to change them.
 
+Listeners use the ports devenv allocates, so ` bind-address `, ` bind-ip `, ` bind-port `,
+` use-random-ports ` and ` listen-mode = "unix" ` are rejected, globally and in ` admin ` and ` ingress `:
+use ` host `, ` port `, ` adminPort ` and ` nodePort ` instead.
+Advertised addresses can be overridden, such as to point at the devenv proxy.
+
 
 
 *Type:*

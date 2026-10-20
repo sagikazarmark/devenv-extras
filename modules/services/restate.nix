@@ -81,6 +81,32 @@ let
     lib.recursiveUpdate generatedSettings cfg.settings
   );
 
+  # Listeners must stay on the ports devenv allocates, which client URLs and the ready probe use.
+  # Advertised addresses only affect what Restate reports, so they can be overridden.
+  conflictingSettings =
+    let
+      sections = {
+        "" = cfg.settings;
+        "admin." = cfg.settings.admin or { };
+        "ingress." = cfg.settings.ingress or { };
+      };
+
+      conflicts =
+        prefix: section:
+        lib.optionals (lib.isAttrs section) (
+          map (key: prefix + key) (
+            builtins.filter (key: section ? ${key}) [
+              "bind-address"
+              "bind-ip"
+              "bind-port"
+              "use-random-ports"
+            ]
+          )
+          ++ lib.optional ((section.listen-mode or null) == "unix") "${prefix}listen-mode"
+        );
+    in
+    lib.concatLists (lib.mapAttrsToList conflicts sections);
+
   deploymentType = lib.types.submodule {
     options = {
       uri = lib.mkOption {
@@ -246,6 +272,11 @@ in
         The generated configuration listens on TCP only, disables telemetry,
         and provisions 4 partitions with 512 MiB of RocksDB memory.
         Partitions are only provisioned on the first start: remove `stateDir` to change them.
+
+        Listeners use the ports devenv allocates, so `bind-address`, `bind-ip`, `bind-port`,
+        `use-random-ports` and `listen-mode = "unix"` are rejected, globally and in `admin` and `ingress`:
+        use `host`, `port`, `adminPort` and `nodePort` instead.
+        Advertised addresses can be overridden, such as to point at the devenv proxy.
       '';
     };
 
@@ -284,6 +315,16 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    assertions = [
+      {
+        assertion = conflictingSettings == [ ];
+        message = ''
+          services.restate.settings must not set ${lib.concatStringsSep ", " conflictingSettings}:
+          Restate listens on the ports devenv allocates. Use services.restate.host, port, adminPort and nodePort instead.
+        '';
+      }
+    ];
+
     packages = [ cfg.package ];
 
     # Defaults, so that clients can be pointed elsewhere, such as at the devenv proxy.
