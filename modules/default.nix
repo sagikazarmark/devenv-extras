@@ -8,7 +8,6 @@
     ./integrations/worker-build.nix
     ./integrations/wrangler.nix
     ./services/litellm.nix
-    ./services/ollama.nix
     ./services/openbao.nix
     ./services/restate.nix
     ./services/sandbox-agent.nix

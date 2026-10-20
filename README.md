@@ -35,7 +35,6 @@ Then enable the modules you need in `devenv.nix`:
   # worker-build.enable = true;
   # wrangler.enable = true;
   # services.litellm.enable = true;
-  # services.ollama.enable = true;
   # services.openbao.enable = true;
   # services.restate.enable = true;
   # services.sandbox-agent.enable = true;
@@ -357,33 +356,6 @@ to use a different version. Disable the language server with
 `languages.tailwindcss.lsp.enable = false`, or choose another one with
 `languages.tailwindcss.lsp.package`.
 
-### Ollama
-
-Run an [Ollama](https://ollama.com/) server with `devenv up`:
-
-```nix
-services.ollama = {
-  enable = true;
-  loadModels = [ "gemma3" ];
-};
-```
-
-The server port is allocated from `services.ollama.port` (default `11434`), so it
-does not clash with an Ollama instance already running on the machine. The shell
-exports `OLLAMA_HOST` pointing at the managed server, so `ollama run` and other
-clients use it without extra configuration. It also exports `OLLAMA_BASE_URL` with
-the OpenAI-compatible `/v1` endpoint, which clients such as Pydantic AI's `ollama:`
-models read.
-
-Models declared in `loadModels` are pulled by the `devenv:ollama:load-models` task once
-the server is ready; models that are already present are skipped. Models are stored
-in `.devenv/state/ollama/models` by default. Point `services.ollama.modelsDir` at an
-absolute path, such as your `~/.ollama/models` directory, to share downloads across
-projects.
-
-For GPU acceleration on Linux, set `services.ollama.package` to `pkgs.ollama-cuda`,
-`pkgs.ollama-rocm` or `pkgs.ollama-vulkan`. On macOS, `pkgs.ollama` uses Metal.
-
 ### LiteLLM
 
 Run a [LiteLLM](https://docs.litellm.ai/) proxy with `devenv up`:
@@ -410,8 +382,9 @@ allocated from `services.litellm.port` (default `4000`). The shell exports
 (read by the LiteLLM SDK for `litellm_proxy/` models) pointing at the managed
 server. Telemetry is disabled by default.
 
-When `services.ollama` is enabled as well, LiteLLM routes `ollama/<model>` to the
-managed Ollama server and starts after Ollama is ready:
+When devenv's [Ollama service](https://devenv.sh/services/ollama/) is enabled as
+well, LiteLLM routes `ollama/<model>` to the managed Ollama server and starts after
+Ollama is ready:
 
 ```nix
 services.ollama = {
@@ -427,6 +400,9 @@ them through `/v1/models`; any other pulled model is reachable through a wildcar
 route. Change the prefix with `services.litellm.ollama.prefix`, the listed models
 with `services.litellm.ollama.models`, or disable the integration with
 `services.litellm.ollama.enable = false`.
+
+devenv-extras used to provide `services.ollama`; it moved to devenv with the same
+options. If the option is missing, update devenv's modules with `devenv update`.
 
 ### OpenBao
 
