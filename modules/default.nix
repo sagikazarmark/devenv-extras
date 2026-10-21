@@ -2,6 +2,7 @@
   imports = [
     ./languages/dang
     ./languages/tailwindcss
+    ./integrations/browsers.nix
     ./integrations/dagger.nix
     ./integrations/dioxus.nix
     ./integrations/vale.nix

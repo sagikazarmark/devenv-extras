@@ -30,6 +30,7 @@ Then enable the modules you need in `devenv.nix`:
 {
   languages.dang.enable = true;
   # languages.tailwindcss.enable = true;
+  # browsers.firefox.enable = true;
   # dagger.enable = true;
   # dioxus.enable = true;
   # worker-build.enable = true;
@@ -379,6 +380,89 @@ processes.wrangler-app.proxy = {
 
 The proxy terminates TLS: `wrangler dev` still receives HTTP, and devenv adds
 `X-Forwarded-Proto: https` to HTTPS requests.
+
+### Browsers
+
+Add browsers for testing, with their WebDriver servers:
+
+```nix
+browsers = {
+  firefox.enable = true;   # Firefox and geckodriver
+  chrome.enable = true;    # Chrome and chromedriver
+};
+```
+
+The shell exports `FIREFOX_BIN` and `CHROME_BIN` with the browser executables.
+WebDriver servers find the browser themselves, and on macOS they prefer the one
+in `/Applications`, so pass the executable to them, for example as
+`moz:firefoxOptions.binary` or `goog:chromeOptions.binary`.
+`browsers.<name>.executable` has it in Nix. Turn the WebDriver servers off with
+`browsers.<name>.driver.enable = false`.
+
+nixpkgs builds Firefox for Linux and macOS. On macOS it is an app bundle, so a
+`firefox` command that runs it is installed as well.
+
+nixpkgs only builds Chromium for Linux, so `browsers.chrome` installs Chromium
+on Linux and Google Chrome on macOS. Google Chrome is unfree; allow it in
+`devenv.yaml`:
+
+```yaml
+nixpkgs:
+  permitted_unfree_packages:
+    - google-chrome
+```
+
+chromedriver only supports the Chrome version with the same major version.
+nixpkgs updates Google Chrome and chromedriver for macOS separately, so devenv
+warns when they differ. Set `browsers.chrome.package` and
+`browsers.chrome.driver.package` to use other packages.
+
+#### Playwright
+
+Install the browsers for [Playwright](https://playwright.dev/), instead of the
+ones it downloads:
+
+```nix
+browsers.playwright.enable = true;
+```
+
+Playwright only finds the browsers of its own version, so
+`browsers.playwright.version` defaults to the version of `playwright-core` in
+`package-lock.json` at the project root (`browsers.playwright.packageLock`
+changes the lockfile), and the browsers come from `playwright-driver` at that
+version. Like Dioxus, a version missing from nixpkgs comes from
+nixpkgs-multiverse. When neither has it, they come from the newest patch release
+of the same minor version, which usually has the same browsers, and devenv
+warns. Set the version explicitly for other package managers or for Playwright
+for Python.
+
+The shell exports `PLAYWRIGHT_BROWSERS_PATH` and turns off Playwright's
+downloads and host requirement checks. Chromium, Firefox and WebKit are installed
+by default; choose some of them to download less:
+
+```nix
+browsers.playwright = {
+  enable = true;
+  # Headless Chromium runs chromium-headless-shell.
+  browsers = [ "chromium-headless-shell" "firefox" ];
+};
+```
+
+#### Puppeteer
+
+Point [Puppeteer](https://pptr.dev/) at Chrome from `browsers.chrome`, instead
+of the one it downloads:
+
+```nix
+browsers.puppeteer.enable = true;
+```
+
+This enables `browsers.chrome`, and the shell exports
+`PUPPETEER_EXECUTABLE_PATH`, `PUPPETEER_BROWSER` and `PUPPETEER_SKIP_DOWNLOAD`.
+Set `browsers.puppeteer.browser = "firefox"` to use Firefox instead. Puppeteer is
+tested with one Chrome version, but other recent versions usually work.
+`puppeteer-core` does not read these variables: pass
+`executablePath: process.env.PUPPETEER_EXECUTABLE_PATH` to `launch` yourself.
 
 ### Tailwind CSS
 

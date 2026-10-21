@@ -1,0 +1,13 @@
+inputs:
+  nixpkgs:
+    url: github:cachix/devenv-nixpkgs/rolling
+  # package-lock.json pins Playwright, which nixpkgs may have moved past.
+  nixpkgs-multiverse:
+    url: github:fzakaria/nixpkgs-multiverse
+  devenv-extras:
+    url: github:sagikazarmark/devenv-extras
+
+imports:
+  - devenv-extras/modules
+
+strict_ports: true

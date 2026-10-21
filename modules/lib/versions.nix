@@ -1,4 +1,5 @@
-# Helpers for modules that install tools at the exact version of a crate in Cargo.lock.
+# Helpers for modules that install tools at the exact version of a package in a lockfile,
+# such as a crate in Cargo.lock or an npm package in package-lock.json.
 {
   pkgs,
   lib,
@@ -31,6 +32,49 @@ rec {
         package = lib.findFirst (p: p.name == crate) null (lock.package or [ ]);
       in
       if package == null then null else package.version;
+
+  # The package-lock.json to read versions from: the one set, or the one at the root if it exists.
+  packageLock =
+    path:
+    if path != null then
+      path
+    else if builtins.pathExists (config.devenv.root + "/package-lock.json") then
+      config.devenv.root + "/package-lock.json"
+    else
+      null;
+
+  # The version of an npm package in a package-lock.json (see `packageLock`), or null without a lockfile or the package.
+  # The package installed at the root wins over ones installed in workspaces.
+  npmLockedVersion =
+    path: name:
+    let
+      lockPath = packageLock path;
+    in
+    if lockPath == null then
+      null
+    else
+      let
+        lock = builtins.fromJSON (builtins.readFile lockPath);
+        # lockfileVersion 2 and 3
+        packages = lock.packages or { };
+        nested = lib.filter (key: lib.hasSuffix "/node_modules/${name}" key) (lib.attrNames packages);
+        # lockfileVersion 1
+        dependencies = lock.dependencies or { };
+      in
+      packages."node_modules/${name}".version or (
+        if nested != [ ] then
+          packages.${lib.head nested}.version or null
+        else
+          dependencies.${name}.version or null
+      );
+
+  # The versions of a package that nixpkgs-multiverse has, or [ ] without the input.
+  multiverseVersions =
+    attr:
+    let
+      result = builtins.tryEval (lib.attrNames (multiverse.${attr} or { }));
+    in
+    if result.success then result.value else [ ];
 
   # A package at an exact version from nixpkgs-multiverse.
   fromMultiverse =

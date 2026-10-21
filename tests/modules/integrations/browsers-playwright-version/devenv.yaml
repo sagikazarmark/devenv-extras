@@ -1,0 +1,12 @@
+inputs:
+  nixpkgs:
+    url: github:cachix/devenv-nixpkgs/rolling
+  nixpkgs-multiverse:
+    url: github:fzakaria/nixpkgs-multiverse
+  devenv-extras:
+    url: github:sagikazarmark/devenv-extras
+
+imports:
+  - devenv-extras/modules
+
+strict_ports: true

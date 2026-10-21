@@ -2,6 +2,473 @@
 
 # Options
 
+## browsers.chrome.enable
+
+
+
+Whether to enable Chrome (Chromium on Linux) and chromedriver, its WebDriver server.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [modules/integrations/browsers.nix](../../modules/integrations/browsers.nix)
+
+
+
+## browsers.chrome.package
+
+
+
+The Chrome package.
+
+nixpkgs only builds Chromium for Linux, so macOS defaults to Google Chrome, which is unfree:
+allow it with ` nixpkgs.permitted_unfree_packages: [ google-chrome ] ` in ` devenv.yaml `.
+
+
+
+*Type:*
+package
+
+
+
+*Default:*
+` pkgs.google-chrome ` on macOS, ` pkgs.chromium ` on Linux
+
+*Declared by:*
+ - [modules/integrations/browsers.nix](../../modules/integrations/browsers.nix)
+
+
+
+## browsers.chrome.driver.enable
+
+Whether to enable chromedriver.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+true
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [modules/integrations/browsers.nix](../../modules/integrations/browsers.nix)
+
+
+
+## browsers.chrome.driver.package
+
+
+
+The chromedriver package. chromedriver only supports the Chrome version with the same major version,
+and devenv warns when they differ.
+
+
+
+*Type:*
+package
+
+
+
+*Default:*
+
+```nix
+pkgs.chromedriver
+```
+
+*Declared by:*
+ - [modules/integrations/browsers.nix](../../modules/integrations/browsers.nix)
+
+
+
+## browsers.chrome.executable
+
+
+
+The Chrome executable, exported as ` CHROME_BIN `.
+
+
+
+*Type:*
+string
+
+
+
+*Default:*
+
+```nix
+lib.getExe config.browsers.chrome.package
+```
+
+*Declared by:*
+ - [modules/integrations/browsers.nix](../../modules/integrations/browsers.nix)
+
+
+
+## browsers.firefox.enable
+
+
+
+Whether to enable Firefox and geckodriver, its WebDriver server.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [modules/integrations/browsers.nix](../../modules/integrations/browsers.nix)
+
+
+
+## browsers.firefox.package
+
+
+
+The Firefox package.
+
+
+
+*Type:*
+package
+
+
+
+*Default:*
+
+```nix
+pkgs.firefox
+```
+
+*Declared by:*
+ - [modules/integrations/browsers.nix](../../modules/integrations/browsers.nix)
+
+
+
+## browsers.firefox.driver.enable
+
+
+
+Whether to enable geckodriver.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+true
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [modules/integrations/browsers.nix](../../modules/integrations/browsers.nix)
+
+
+
+## browsers.firefox.driver.package
+
+
+
+The geckodriver package.
+
+
+
+*Type:*
+package
+
+
+
+*Default:*
+
+```nix
+pkgs.geckodriver
+```
+
+*Declared by:*
+ - [modules/integrations/browsers.nix](../../modules/integrations/browsers.nix)
+
+
+
+## browsers.firefox.executable
+
+
+
+The Firefox executable, exported as ` FIREFOX_BIN `.
+On macOS, where nixpkgs Firefox is an app bundle, a ` firefox ` command that runs it is installed.
+
+
+
+*Type:*
+string
+
+
+
+*Default:*
+the ` firefox ` executable of ` package `, in ` Firefox.app ` on macOS
+
+*Declared by:*
+ - [modules/integrations/browsers.nix](../../modules/integrations/browsers.nix)
+
+
+
+## browsers.playwright.enable
+
+
+
+Whether to enable browsers for Playwright, instead of the ones it downloads.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [modules/integrations/browsers.nix](../../modules/integrations/browsers.nix)
+
+
+
+## browsers.playwright.package
+
+
+
+The playwright-driver package to take the browsers from. Setting it overrides ` version `.
+
+
+
+*Type:*
+package
+
+
+
+*Default:*
+` playwright-driver ` at ` version `, or ` pkgs.playwright-driver `
+
+*Declared by:*
+ - [modules/integrations/browsers.nix](../../modules/integrations/browsers.nix)
+
+
+
+## browsers.playwright.packageLock
+
+
+
+The package-lock.json to read the ` playwright-core ` version from.
+When null, package-lock.json at the project root is used if it exists.
+
+
+
+*Type:*
+null or absolute path
+
+
+
+*Default:*
+
+```nix
+null
+```
+
+*Declared by:*
+ - [modules/integrations/browsers.nix](../../modules/integrations/browsers.nix)
+
+
+
+## browsers.playwright.browsers
+
+
+
+The browsers to install. When null, all the browsers of ` package ` are installed.
+Headless Chromium runs ` chromium-headless-shell `, and ` ffmpeg ` records videos.
+
+
+
+*Type:*
+null or (list of (one of “chromium”, “chromium-headless-shell”, “ffmpeg”, “firefox”, “webkit”))
+
+
+
+*Default:*
+
+```nix
+null
+```
+
+
+
+*Example:*
+
+```nix
+[
+  "chromium-headless-shell"
+]
+```
+
+*Declared by:*
+ - [modules/integrations/browsers.nix](../../modules/integrations/browsers.nix)
+
+
+
+## browsers.playwright.version
+
+
+
+The Playwright version to install browsers for. Playwright only finds the browsers of its own version.
+Defaults to the version of ` playwright-core ` (which ` playwright ` and ` @playwright/test ` depend on)
+in package-lock.json, if there is one.
+
+The browsers come from ` playwright-driver ` at this version: from nixpkgs if it has it, otherwise from
+nixpkgs-multiverse, which needs the ` nixpkgs-multiverse ` input. When neither has it, they come from the
+newest patch release of the same minor version, and devenv warns. When null,
+` pkgs.playwright-driver ` is installed.
+
+
+
+*Type:*
+null or string
+
+
+
+*Default:*
+the version of ` playwright-core ` in package-lock.json, or null
+
+*Declared by:*
+ - [modules/integrations/browsers.nix](../../modules/integrations/browsers.nix)
+
+
+
+## browsers.puppeteer.enable
+
+
+
+Whether to enable a browser for Puppeteer, instead of the one it downloads.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [modules/integrations/browsers.nix](../../modules/integrations/browsers.nix)
+
+
+
+## browsers.puppeteer.browser
+
+
+
+The browser Puppeteer launches. Its ` browsers.<name>.enable ` defaults to true.
+Puppeteer is tested with one Chrome version, but other recent versions usually work.
+
+
+
+*Type:*
+one of “chrome”, “firefox”
+
+
+
+*Default:*
+
+```nix
+"chrome"
+```
+
+*Declared by:*
+ - [modules/integrations/browsers.nix](../../modules/integrations/browsers.nix)
+
+
+
 ## dagger.enable
 
 
@@ -59,6 +526,8 @@ dagger.packages.${pkgs.stdenv.hostPlatform.system}.dagger
 
 
 ## dagger.dang.enable
+
+
 
 Whether to enable Dang tooling for Dagger.
 
@@ -2472,8 +2941,6 @@ true
 
 ## services.sandbox-agent.cors.allowCredentials
 
-
-
 Whether to allow credentials for CORS
 
 
@@ -2910,6 +3377,8 @@ true
 
 
 ## vale.lsp.package
+
+
 
 The vale-ls package to use.
 

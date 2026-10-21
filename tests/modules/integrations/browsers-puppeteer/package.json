@@ -1,0 +1,8 @@
+{
+  "name": "browsers-puppeteer",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "puppeteer": "25.15.0"
+  }
+}
