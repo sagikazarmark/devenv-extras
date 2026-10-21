@@ -15,9 +15,18 @@ free_port() {
   python3 -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])'
 }
 
+# Fails with a message and the log of a WebDriver server.
+fail() {
+  local driver="$1" message="$2"
+
+  echo "$driver: $message" >&2
+  cat "$tmp/$driver.log" >&2
+  exit 1
+}
+
 # Opens a page in a WebDriver session with the given capabilities, and checks its title.
 webdriver() {
-  local driver="$1" capabilities="$2" port url session title
+  local driver="$1" capabilities="$2" port url ready=0 response session title
 
   port="$(free_port)"
   url="http://127.0.0.1:$port"
@@ -26,28 +35,31 @@ webdriver() {
 
   for _ in $(seq 1 50); do
     if curl --silent --fail "$url/status" | jq -e '.value.ready' >/dev/null 2>&1; then
+      ready=1
       break
     fi
     sleep 0.2
   done
+  [ "$ready" = 1 ] || fail "$driver" "not ready"
 
-  session="$(
-    curl --silent --show-error --fail -X POST "$url/session" \
+  # Without --fail, so that the error explains why the browser did not start.
+  response="$(
+    curl --silent --show-error -X POST "$url/session" \
       -H 'Content-Type: application/json' \
-      -d "{\"capabilities\": {\"alwaysMatch\": $capabilities}}" |
-      jq -r '.value.sessionId'
-  )"
+      -d "{\"capabilities\": {\"alwaysMatch\": $capabilities}}"
+  )" || fail "$driver" "cannot create a session"
+  session="$(jq -r '.value.sessionId // empty' <<<"$response")"
+  [ -n "$session" ] || fail "$driver" "cannot create a session: $response"
+
   curl --silent --show-error --fail -X POST "$url/session/$session/url" \
     -H 'Content-Type: application/json' \
-    -d '{"url": "data:text/html,<title>browsers fixture</title>"}' >/dev/null
-  title="$(curl --silent --show-error --fail "$url/session/$session/title" | jq -r '.value')"
+    -d '{"url": "data:text/html,<title>browsers fixture</title>"}' >/dev/null ||
+    fail "$driver" "cannot open the page"
+  title="$(curl --silent --show-error --fail "$url/session/$session/title" | jq -r '.value')" ||
+    fail "$driver" "cannot read the title"
   curl --silent --fail -X DELETE "$url/session/$session" >/dev/null || true
 
-  if [ "$title" != "browsers fixture" ]; then
-    echo "$driver: unexpected title: $title" >&2
-    cat "$tmp/$driver.log" >&2
-    exit 1
-  fi
+  [ "$title" = "browsers fixture" ] || fail "$driver" "unexpected title: $title"
 }
 
 # The launcher on macOS, Firefox itself on Linux.
