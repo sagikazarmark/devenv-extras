@@ -3388,6 +3388,42 @@ null
 
 
 
+## wrangler.dev.\<name>.d1.migrate
+
+
+
+D1 databases of the worker to apply migrations to, by binding or database name,
+before the workers using its ` persistTo ` directory start.
+Wrangler reads the migrations from the ` migrations_dir ` of the database in the configuration of the worker.
+
+
+
+*Type:*
+list of string
+
+
+
+*Default:*
+
+```nix
+[ ]
+```
+
+
+
+*Example:*
+
+```nix
+[
+  "DB"
+]
+```
+
+*Declared by:*
+ - [modules/integrations/wrangler.nix](../../modules/integrations/wrangler.nix)
+
+
+
 ## wrangler.dev.\<name>.directory
 
 
@@ -3411,6 +3447,40 @@ the name of the worker
 
 ```nix
 "workers/api"
+```
+
+*Declared by:*
+ - [modules/integrations/wrangler.nix](../../modules/integrations/wrangler.nix)
+
+
+
+## wrangler.dev.\<name>.environment
+
+
+
+The Wrangler environment to use (` --env `), for ` wrangler dev ` and the D1 migrations.
+Wrangler names the worker ` <name>-<environment> `, so service bindings and ` script_name `
+in other workers have to use that name.
+
+
+
+*Type:*
+null or string
+
+
+
+*Default:*
+
+```nix
+null
+```
+
+
+
+*Example:*
+
+```nix
+"dev"
 ```
 
 *Declared by:*
@@ -3443,8 +3513,8 @@ list of string
 
 ```nix
 [
-  "--env"
-  "staging"
+  "--log-level"
+  "debug"
 ]
 ```
 
@@ -3507,6 +3577,36 @@ The actual port is allocated by devenv and may differ.
 
 
 
+## wrangler.dev.\<name>.persistTo
+
+
+
+The directory for the local data of the worker, such as D1, KV and R2 (` --persist-to `).
+D1 migrations use it as well.
+
+Workers with the same directory share data with the same IDs, such as a D1 database.
+Wrangler does not support this across ` wrangler dev ` sessions, and they crash when they open
+the directory at the same time, so these workers start one after the other, each when the one before it is ready.
+Concurrent writes to the same database may still fail with ` SQLITE_BUSY `.
+
+
+
+*Type:*
+string
+
+
+
+*Default:*
+
+```nix
+"${config.devenv.state}/wrangler/state/<name>"
+```
+
+*Declared by:*
+ - [modules/integrations/wrangler.nix](../../modules/integrations/wrangler.nix)
+
+
+
 ## wrangler.dev.\<name>.port
 
 
@@ -3524,6 +3624,98 @@ The actual port is allocated by devenv and may differ;
 
 *Default:*
 8787, plus the position of the worker in ` wrangler.dev `
+
+*Declared by:*
+ - [modules/integrations/wrangler.nix](../../modules/integrations/wrangler.nix)
+
+
+
+## wrangler.dev.\<name>.ready.path
+
+
+
+The path to request to check that the worker is ready.
+Any HTTP response means ready: ` wrangler dev ` holds requests until the worker is built and running.
+The default is handled by Wrangler itself, without running the worker.
+When null, devenv only checks that the port accepts connections, which happens before the worker is built.
+
+
+
+*Type:*
+null or string
+
+
+
+*Default:*
+
+```nix
+"/cdn-cgi/local/platform-proxy"
+```
+
+
+
+*Example:*
+
+```nix
+"/healthz"
+```
+
+*Declared by:*
+ - [modules/integrations/wrangler.nix](../../modules/integrations/wrangler.nix)
+
+
+
+## wrangler.dev.\<name>.url
+
+
+
+The local URL of the worker.
+
+
+
+*Type:*
+string *(read only)*
+
+
+
+*Default:*
+the local URL of the worker, with the port allocated by devenv
+
+*Declared by:*
+ - [modules/integrations/wrangler.nix](../../modules/integrations/wrangler.nix)
+
+
+
+## wrangler.dev.\<name>.vars
+
+
+
+Variables for the worker, passed with ` --var `.
+They take precedence over ` vars ` in the Wrangler configuration and over ` .dev.vars ` and ` .env ` files.
+
+
+
+*Type:*
+attribute set of string
+
+
+
+*Default:*
+
+```nix
+{ }
+```
+
+
+
+*Example:*
+
+```nix
+{
+  PUBLIC_URL = config.wrangler.dev.app.url;
+}
+
+```
 
 *Declared by:*
  - [modules/integrations/wrangler.nix](../../modules/integrations/wrangler.nix)

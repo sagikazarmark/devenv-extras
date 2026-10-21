@@ -313,8 +313,45 @@ set to its directory, so its configuration and custom build (such as
 `worker-build`) work unchanged. Ports are allocated from 8787 for HTTP and 9229
 for the inspector, counting up in the order of the workers; set `port` and
 `inspectorPort` to change them, `config` for a configuration file other than
-`wrangler.toml`, `wrangler.json` or `wrangler.jsonc`, and `extraArgs` for more
-`wrangler dev` flags.
+`wrangler.toml`, `wrangler.json` or `wrangler.jsonc`, `environment` for a
+Wrangler environment (`--env`), `vars` for variables (`--var`, taking precedence
+over the configuration and `.dev.vars`), and `extraArgs` for more `wrangler dev`
+flags. `url` has the local URL of a worker, with its allocated port:
+
+```nix
+wrangler.dev.app = {
+  environment = "dev";
+  vars.PUBLIC_URL = config.wrangler.dev.app.url;
+};
+```
+
+With an environment, Wrangler names the worker `<name>-<environment>`, which
+service bindings and `script_name` in other workers have to use.
+
+A worker is ready when it responds to HTTP: `wrangler dev` accepts connections
+before the worker is built, and holds requests until it runs. The probe requests
+`/cdn-cgi/local/platform-proxy`, which Wrangler answers without running the
+worker; set `ready.path` to probe the worker instead (any response counts), or
+`null` to only wait for the port. Processes and tasks with
+`after = [ "devenv:processes:wrangler-<name>" ]` start when it is ready.
+
+Local data, such as D1, KV and R2, is kept per worker in
+`$DEVENV_STATE/wrangler/state/<name>`; `persistTo` changes the directory. To
+apply D1 migrations before the worker starts, list its databases, by binding or
+name, in `d1.migrate`. They run with the same directory, configuration and
+environment as `wrangler dev`, from the `migrations_dir` of the database:
+
+```nix
+wrangler.dev.app.d1.migrate = [ "DB" ];
+```
+
+Workers with the same `persistTo` share data with the same IDs, such as a D1
+database. Wrangler does not support this across `wrangler dev` sessions: they
+crash when they open the directory at the same time, so workers sharing one
+start one after the other, each when the one before it is ready. Concurrent
+writes to the same database may still fail with `SQLITE_BUSY`. Wrangler
+supports sharing data within one session: `wrangler dev -c app/wrangler.toml -c
+api/wrangler.toml`, though only the first worker gets a URL.
 
 The sessions reach each other through Wrangler's dev registry: a worker can call
 another through a service binding, or use a Durable Object defined in another

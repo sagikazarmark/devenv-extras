@@ -25,8 +25,72 @@ let
     }
   );
 
+  wrangler = lib.getExe cfg.package;
+  curl = lib.getExe pkgs.curl;
+
+  # Wildcard addresses are fine to bind to, but not to connect to.
+  connectHost =
+    host:
+    if
+      builtins.elem host [
+        "0.0.0.0"
+        "::"
+        "[::]"
+      ]
+    then
+      "127.0.0.1"
+    else if lib.hasInfix ":" host && !lib.hasPrefix "[" host then
+      "[${host}]"
+    else
+      host;
+
+  # Arguments that select the worker, shared by `wrangler dev` and the migrations.
+  workerArgs =
+    worker:
+    [
+      "--cwd"
+      "${config.devenv.root}/${worker.directory}"
+    ]
+    ++ lib.optionals (worker.config != null) [
+      "--config"
+      worker.config
+    ];
+
+  envArgs =
+    worker:
+    lib.optionals (worker.environment != null) [
+      "--env"
+      worker.environment
+    ];
+
+  # Workers that keep their local data in the same directory as the given one, itself included.
+  sharing = worker: lib.filterAttrs (_: other: other.persistTo == worker.persistTo) cfg.dev;
+
+  migrateTask = name: "devenv:wrangler:migrate-${name}";
+
+  migrateCommand =
+    worker: database:
+    "${wrangler} ${
+      lib.escapeShellArgs (
+        workerArgs worker
+        ++ [
+          "d1"
+          "migrations"
+          "apply"
+          database
+          "--local"
+          "--persist-to"
+          worker.persistTo
+        ]
+        ++ envArgs worker
+      )
+    }";
+
   devModule =
-    { name, ... }:
+    { name, ... }@args:
+    let
+      worker = args.config;
+    in
     {
       options = {
         directory = lib.mkOption {
@@ -78,12 +142,85 @@ let
           '';
         };
 
+        environment = lib.mkOption {
+          type = lib.types.nullOr lib.types.str;
+          default = null;
+          example = "dev";
+          description = ''
+            The Wrangler environment to use (`--env`), for `wrangler dev` and the D1 migrations.
+            Wrangler names the worker `<name>-<environment>`, so service bindings and `script_name`
+            in other workers have to use that name.
+          '';
+        };
+
+        vars = lib.mkOption {
+          type = lib.types.attrsOf lib.types.str;
+          default = { };
+          example = lib.literalExpression ''
+            {
+              PUBLIC_URL = config.wrangler.dev.app.url;
+            }
+          '';
+          description = ''
+            Variables for the worker, passed with `--var`.
+            They take precedence over `vars` in the Wrangler configuration and over `.dev.vars` and `.env` files.
+          '';
+        };
+
+        persistTo = lib.mkOption {
+          type = lib.types.str;
+          default = "${config.devenv.state}/wrangler/state/${name}";
+          defaultText = lib.literalExpression ''"''${config.devenv.state}/wrangler/state/<name>"'';
+          description = ''
+            The directory for the local data of the worker, such as D1, KV and R2 (`--persist-to`).
+            D1 migrations use it as well.
+
+            Workers with the same directory share data with the same IDs, such as a D1 database.
+            Wrangler does not support this across `wrangler dev` sessions, and they crash when they open
+            the directory at the same time, so these workers start one after the other, each when the one before it is ready.
+            Concurrent writes to the same database may still fail with `SQLITE_BUSY`.
+          '';
+        };
+
+        ready.path = lib.mkOption {
+          type = lib.types.nullOr lib.types.str;
+          default = "/cdn-cgi/local/platform-proxy";
+          example = "/healthz";
+          description = ''
+            The path to request to check that the worker is ready.
+            Any HTTP response means ready: `wrangler dev` holds requests until the worker is built and running.
+            The default is handled by Wrangler itself, without running the worker.
+            When null, devenv only checks that the port accepts connections, which happens before the worker is built.
+          '';
+        };
+
+        d1.migrate = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
+          default = [ ];
+          example = [ "DB" ];
+          description = ''
+            D1 databases of the worker to apply migrations to, by binding or database name,
+            before the workers using its `persistTo` directory start.
+            Wrangler reads the migrations from the `migrations_dir` of the database in the configuration of the worker.
+          '';
+        };
+
+        url = lib.mkOption {
+          type = lib.types.str;
+          readOnly = true;
+          default = "http://${connectHost worker.host}:${
+            toString config.processes."wrangler-${name}".ports.http.value
+          }";
+          defaultText = lib.literalMD "the local URL of the worker, with the port allocated by devenv";
+          description = "The local URL of the worker.";
+        };
+
         extraArgs = lib.mkOption {
           type = lib.types.listOf lib.types.str;
           default = [ ];
           example = [
-            "--env"
-            "staging"
+            "--log-level"
+            "debug"
           ];
           description = "More arguments for `wrangler dev`.";
         };
@@ -131,19 +268,29 @@ in
       WRANGLER_REGISTRY_PATH = cfg.registry;
     };
 
+    assertions = lib.concatLists (
+      lib.mapAttrsToList (name: worker: [
+        {
+          assertion = lib.hasPrefix "/" worker.persistTo;
+          message = "wrangler.dev.${name}.persistTo must be an absolute path.";
+        }
+        {
+          assertion = worker.ready.path == null || lib.hasPrefix "/" worker.ready.path;
+          message = "wrangler.dev.${name}.ready.path must start with a slash.";
+        }
+        {
+          assertion = !lib.any (lib.hasInfix ":") (lib.attrNames worker.vars);
+          message = "wrangler.dev.${name}.vars names must not contain a colon: Wrangler splits `--var` at the first one.";
+        }
+      ]) cfg.dev
+    );
+
     processes = lib.mapAttrs' (
       name: worker:
       lib.nameValuePair "wrangler-${name}" {
-        exec = "exec ${lib.getExe cfg.package} ${
+        exec = "exec ${wrangler} ${
           lib.escapeShellArgs (
-            [
-              "--cwd"
-              "${config.devenv.root}/${worker.directory}"
-            ]
-            ++ lib.optionals (worker.config != null) [
-              "--config"
-              worker.config
-            ]
+            workerArgs worker
             ++ [
               "dev"
               "--ip"
@@ -152,18 +299,58 @@ in
               (toString config.processes."wrangler-${name}".ports.http.value)
               "--inspector-port"
               (toString config.processes."wrangler-${name}".ports.inspector.value)
+              "--persist-to"
+              worker.persistTo
               # The process manager owns the terminal.
               "--show-interactive-dev-session=false"
             ]
+            ++ envArgs worker
+            ++ lib.concatLists (
+              lib.mapAttrsToList (key: value: [
+                "--var"
+                "${key}:${value}"
+              ]) worker.vars
+            )
             ++ worker.extraArgs
           )
         }";
 
         env = workerBuildEnv;
 
+        # Workers sharing a directory crash when they open its databases at the same time,
+        # so each one starts when the one before it is ready.
+        after =
+          let
+            earlier = lib.filter (other: other < name) (lib.attrNames (sharing worker));
+          in
+          lib.optional (earlier != [ ]) "devenv:processes:wrangler-${lib.last earlier}";
+
         ports.http.allocate = worker.port;
         ports.inspector.allocate = worker.inspectorPort;
+
+        # wrangler dev accepts connections before the worker is built, and holds requests until it runs.
+        ready = lib.mkIf (worker.ready.path != null) {
+          exec = lib.mkDefault "${curl} --silent --output /dev/null --max-time 1 ${lib.escapeShellArg "${worker.url}${worker.ready.path}"}";
+          period = lib.mkDefault 1;
+          probe_timeout = lib.mkDefault 2;
+        };
       }
     ) cfg.dev;
+
+    tasks = lib.mapAttrs' (
+      name: worker:
+      let
+        sharers = sharing worker;
+      in
+      lib.nameValuePair (migrateTask name) {
+        description = "Apply the D1 migrations of the ${name} worker";
+        exec = lib.concatMapStringsSep " && " (migrateCommand worker) worker.d1.migrate;
+        # Migrations for the same directory run one at a time, in the order of the workers.
+        after = map migrateTask (
+          lib.filter (other: other < name && sharers.${other}.d1.migrate != [ ]) (lib.attrNames sharers)
+        );
+        before = map (other: "devenv:processes:wrangler-${other}") (lib.attrNames sharers);
+      }
+    ) (lib.filterAttrs (_: worker: worker.d1.migrate != [ ]) cfg.dev);
   };
 }

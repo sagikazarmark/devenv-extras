@@ -1,0 +1,17 @@
+name = "writer"
+main = "index.js"
+compatibility_date = "2025-09-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "notes"
+database_id = "00000000-0000-0000-0000-000000000001"
+
+# D1 databases are not inherited by environments, so the migrations have to use the same one.
+[env.dev]
+vars = { GREETING = "hello from dev" }
+
+[[env.dev.d1_databases]]
+binding = "DB"
+database_name = "notes-dev"
+database_id = "00000000-0000-0000-0000-000000000002"
