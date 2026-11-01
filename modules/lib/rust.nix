@@ -1,4 +1,5 @@
-# Helpers for modules that build a Cargo project with a CLI that runs cargo itself, such as dx or worker-build.
+# Helpers for modules that build a Cargo project with a CLI that runs cargo itself, such as dx, worker-build
+# or cargo-zigbuild.
 {
   pkgs,
   lib,
@@ -10,29 +11,37 @@ let
 
   wasmTarget = "wasm32-unknown-unknown";
 
-  rustSnippet = ''
+  rustSnippet = target: ''
     languages.rust = {
       enable = true;
       channel = "stable";
-      targets = [ "${wasmTarget}" ];
+      targets = [ "${target}" ];
     };
   '';
 in
 {
-  # A warning for when the devenv Rust toolchain cannot build WebAssembly.
+  inherit rustSnippet;
+
+  # Whether the devenv Rust toolchain can build for `target`.
   # A toolchain file is not checked: it may list the target itself.
+  hasTarget = target: rust.toolchainFile != null || builtins.elem target rust.targets;
+
+  # A warning for when the devenv Rust toolchain cannot build WebAssembly.
   wasmTargetWarnings =
     tool:
     lib.optional (rust.enable && rust.toolchainFile == null && !builtins.elem wasmTarget rust.targets)
       ''
         ${tool} builds WebAssembly, but the devenv Rust toolchain does not have the ${wasmTarget} target. Add it with:
 
-        ${rustSnippet}
+        ${rustSnippet wasmTarget}
       '';
 
   # Build the Cargo project at `path` with `buildRustPackage`, running `buildCommand` in the crate directory
   # instead of cargo, and `installCommand` to copy its output to `$out`.
   # Dependencies are vendored from Cargo.lock, so the build runs offline.
+  #
+  # `target` is the Rust target the build needs, for the error message when the devenv Rust toolchain is off.
+  # `pnameSuffix` is appended to the package name read from Cargo.toml.
   #
   # `args` are passed to `buildRustPackage` and override the defaults, except `nativeBuildInputs` and `env`,
   # which are added to them. `args.rustPlatform` replaces the one made from the devenv Rust toolchain.
@@ -43,15 +52,17 @@ in
       buildCommand,
       installCommand,
       env ? { },
+      target ? wasmTarget,
+      pnameSuffix ? "",
     }:
     path: args:
     let
       toolchain =
         if !rust.enable then
           throw ''
-            ${name} needs the devenv Rust toolchain with the ${wasmTarget} target:
+            ${name} needs the devenv Rust toolchain with the ${target} target:
 
-            ${rustSnippet}
+            ${rustSnippet target}
             or a `rustPlatform` argument.
           ''
         else
@@ -83,7 +94,7 @@ in
     in
     rustPlatform.buildRustPackage (
       {
-        pname = cargoToml.package.name or (baseNameOf (toString path));
+        pname = (cargoToml.package.name or (baseNameOf (toString path))) + pnameSuffix;
         inherit version;
 
         # Leave out devenv state and build outputs, so importing ./. does not copy them to the store.

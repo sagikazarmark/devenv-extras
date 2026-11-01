@@ -33,6 +33,7 @@ Then enable the modules you need in `devenv.nix`:
   # browsers.firefox.enable = true;
   # dagger.enable = true;
   # dioxus.enable = true;
+  # rust-cross.enable = true;
   # worker-build.enable = true;
   # wrangler.enable = true;
   # services.litellm.enable = true;
@@ -293,6 +294,77 @@ instead. The second argument takes `release` (default `true`; `false` builds
 with `--dev`), `buildFeatures`, `buildNoDefaultFeatures`, `rustPlatform`, and
 `workerBuildFlags` for more worker-build flags. Other arguments go to
 `rustPlatform.buildRustPackage`.
+
+### Rust cross-compilation
+
+Add [cargo-zigbuild](https://github.com/rust-cross/cargo-zigbuild), which
+cross-compiles Rust projects with Zig as the linker, so no C toolchain for the
+target is needed:
+
+```nix
+languages.rust = {
+  channel = "stable";
+  targets = [ "aarch64-unknown-linux-musl" ];
+};
+
+rust-cross.enable = true;
+```
+
+`rust-cross.enable` enables `languages.rust` and `languages.zig` (without the Zig
+language server) by default, and cargo-zigbuild uses the `languages.zig` compiler.
+Add each target to `languages.rust.targets`, then build with
+`cargo zigbuild --target aarch64-unknown-linux-musl`.
+
+nixpkgs' cargo-zigbuild cannot link `cdylib` crates for macOS with Zig 0.16 or
+later, so `rust-cross.package` builds cargo-zigbuild 0.24.0 until nixpkgs has it.
+
+`rust-cross.import` builds a Cargo project for one target as a Nix package, for
+devenv [outputs](https://devenv.sh/outputs/). Build one package per target:
+
+```nix
+{ config, ... }:
+
+{
+  languages.rust = {
+    channel = "stable";
+    targets = [
+      "x86_64-unknown-linux-musl"
+      "aarch64-unknown-linux-gnu"
+    ];
+  };
+
+  rust-cross.enable = true;
+
+  outputs = {
+    app-x86_64-linux = config.rust-cross.import ./. { target = "x86_64-unknown-linux-musl"; };
+    app-aarch64-linux = config.rust-cross.import ./. { target = "aarch64-unknown-linux-gnu.2.17"; };
+  };
+}
+```
+
+The package has the binaries of the workspace packages in `bin`, and their
+`cdylib`, `dylib` and `staticlib` libraries in `lib`. A build for the host target
+uses `cargo build`, and builds for any other target use `cargo zigbuild`.
+Dependencies are vendored from `Cargo.lock`, so the build runs offline.
+
+The second argument takes:
+
+- `target`: the Rust target. `*-linux-gnu` targets take a glibc version suffix,
+  such as `.2.17`; the toolchain needs the target without it. The build fails
+  when the devenv Rust toolchain does not have the target.
+- `release` (default `true`).
+- `buildFeatures` and `buildNoDefaultFeatures` for cargo features.
+- `cargoBuildFlags`: more flags for cargo, such as `[ "--bin" "server" ]`.
+- `rustPlatform` to build without the devenv Rust toolchain.
+
+Other arguments go to `rustPlatform.buildRustPackage`, such as
+`buildAndTestSubdir` for a crate in a workspace subdirectory.
+
+On macOS, builds for macOS targets link against the SDK in
+[`apple.sdk`](https://devenv.sh/reference/options/#applesdk). nixpkgs has no
+macOS SDK on Linux, so there only crates that do not link Apple frameworks build
+for macOS. `universal2-apple-darwin` is not supported: build
+`x86_64-apple-darwin` and `aarch64-apple-darwin` separately.
 
 ### Wrangler
 

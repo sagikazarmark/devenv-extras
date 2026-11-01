@@ -1342,6 +1342,125 @@ pkgs.tailwindcss-language-server
 
 
 
+## rust-cross.enable
+
+
+
+Whether to enable cross-compilation of Rust projects with cargo-zigbuild.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [modules/integrations/rust-cross.nix](../../modules/integrations/rust-cross.nix)
+
+
+
+## rust-cross.package
+
+
+
+The cargo-zigbuild package, which ` import ` also builds with.
+
+The default uses the Zig compiler from ` languages.zig.package `. It builds cargo-zigbuild 0.24.0
+when nixpkgs has an older version, which cannot link ` cdylib ` crates for macOS with Zig 0.16 or later.
+
+
+
+*Type:*
+package
+
+
+
+*Default:*
+` pkgs.cargo-zigbuild ` (at least 0.24.0) with the Zig compiler from ` languages.zig.package `
+
+*Declared by:*
+ - [modules/integrations/rust-cross.nix](../../modules/integrations/rust-cross.nix)
+
+
+
+## rust-cross.import
+
+
+
+Build a Cargo project for one Rust target, for example to use it in ` outputs `.
+
+It takes the path to the project (the directory with Cargo.lock) and an attribute set of
+arguments, and returns a package with the binaries of the workspace packages in ` bin ` and their
+` cdylib `, ` dylib ` and ` staticlib ` libraries in ` lib `. Dependencies are vendored from Cargo.lock,
+so the build runs offline.
+
+A build for the host target uses ` cargo build `. Builds for any other target use
+` cargo zigbuild `, which links with Zig, so no C toolchain for the target is needed.
+
+The arguments are:
+
+ - ` target `: the Rust target to build for, such as ` "aarch64-unknown-linux-musl" `.
+   ` *-linux-gnu ` targets take a glibc version suffix, such as ` "x86_64-unknown-linux-gnu.2.17" `.
+ - ` release `: build with ` --release ` (the default) or without it.
+ - ` buildFeatures ` and ` buildNoDefaultFeatures `: the cargo features to build with.
+ - ` cargoBuildFlags `: more flags for cargo, such as ` [ "--bin" "server" ] `.
+ - ` rustPlatform `: the ` rustPlatform ` to build with, instead of one with the devenv Rust toolchain.
+
+Other arguments, such as ` buildAndTestSubdir ` for a crate in a workspace subdirectory or
+` buildInputs `, are passed to ` rustPlatform.buildRustPackage `.
+
+The devenv Rust toolchain needs the target (without the glibc version suffix).
+Build one package per target:
+
+```nix
+languages.rust = {
+  enable = true;
+  channel = "stable";
+  targets = [
+    "x86_64-unknown-linux-musl"
+    "aarch64-unknown-linux-gnu"
+  ];
+};
+
+outputs = {
+  app-x86_64-linux = config.rust-cross.import ./. { target = "x86_64-unknown-linux-musl"; };
+  app-aarch64-linux = config.rust-cross.import ./. { target = "aarch64-unknown-linux-gnu.2.17"; };
+};
+```
+
+Builds for macOS targets link against the SDK in ` apple.sdk ` on macOS. On Linux there is no
+SDK, so only crates that do not link Apple frameworks build for macOS.
+
+
+
+*Type:*
+function that evaluates to a(n) function that evaluates to a(n) package *(read only)*
+
+
+
+*Default:*
+a function that cross-compiles a Cargo project for one target
+
+*Declared by:*
+ - [modules/integrations/rust-cross.nix](../../modules/integrations/rust-cross.nix)
+
+
+
 ## services.litellm.enable
 
 
