@@ -1370,7 +1370,7 @@ true
 ```
 
 *Declared by:*
- - [modules/integrations/rust-cross.nix](../../modules/integrations/rust-cross.nix)
+ - [modules/integrations/rust-cross](../../modules/integrations/rust-cross)
 
 
 
@@ -1380,8 +1380,9 @@ true
 
 The cargo-zigbuild package, which ` import ` also builds with.
 
-The default uses the Zig compiler from ` languages.zig.package `. It builds cargo-zigbuild 0.24.0
-when nixpkgs has an older version, which cannot link ` cdylib ` crates for macOS with Zig 0.16 or later.
+The default uses the Zig compiler from ` languages.zig.package `. It uses the prebuilt
+cargo-zigbuild 0.24.0 release when nixpkgs has an older version, which cannot link ` cdylib `
+crates for macOS with Zig 0.16 or later.
 
 
 
@@ -1394,7 +1395,7 @@ package
 ` pkgs.cargo-zigbuild ` (at least 0.24.0) with the Zig compiler from ` languages.zig.package `
 
 *Declared by:*
- - [modules/integrations/rust-cross.nix](../../modules/integrations/rust-cross.nix)
+ - [modules/integrations/rust-cross](../../modules/integrations/rust-cross)
 
 
 
@@ -1457,7 +1458,7 @@ function that evaluates to a(n) function that evaluates to a(n) package *(read o
 a function that cross-compiles a Cargo project for one target
 
 *Declared by:*
- - [modules/integrations/rust-cross.nix](../../modules/integrations/rust-cross.nix)
+ - [modules/integrations/rust-cross](../../modules/integrations/rust-cross)
 
 
 

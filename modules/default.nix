@@ -5,7 +5,7 @@
     ./integrations/browsers.nix
     ./integrations/dagger.nix
     ./integrations/dioxus.nix
-    ./integrations/rust-cross.nix
+    ./integrations/rust-cross
     ./integrations/vale.nix
     ./integrations/worker-build.nix
     ./integrations/wrangler.nix

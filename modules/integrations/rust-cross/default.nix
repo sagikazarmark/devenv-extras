@@ -8,40 +8,19 @@
 let
   cfg = config.rust-cross;
 
-  rust = import ../lib/rust.nix { inherit pkgs lib config; };
+  rust = import ../../lib/rust.nix { inherit pkgs lib config; };
 
   # cargo-zigbuild before 0.24.0 cannot link cdylibs for macOS with Zig 0.16 or later:
   # https://github.com/rust-cross/cargo-zigbuild/issues/479
-  # Build 0.24.0 until nixpkgs has it.
+  # Use the prebuilt 0.24.0 release until nixpkgs has it.
   cargoZigbuild =
     let
-      zigbuild = pkgs.cargo-zigbuild.override { zig = config.languages.zig.package; };
+      zig = config.languages.zig.package;
     in
-    if lib.versionAtLeast zigbuild.version "0.24.0" then
-      zigbuild
+    if lib.versionAtLeast pkgs.cargo-zigbuild.version "0.24.0" then
+      pkgs.cargo-zigbuild.override { inherit zig; }
     else
-      zigbuild.overrideAttrs (
-        finalAttrs: _prev: {
-          version = "0.24.0";
-
-          src = pkgs.fetchFromGitHub {
-            owner = "rust-cross";
-            repo = "cargo-zigbuild";
-            tag = "v${finalAttrs.version}";
-            hash = "sha256-7hwu7rOotkpm+nRLQq0a44e+2UmPJyRo7tzeRX5K8tE=";
-          };
-
-          cargoDeps = pkgs.rustPlatform.fetchCargoVendor {
-            inherit (finalAttrs) pname version src;
-            hash = "sha256-QBsZEP8er3tTF9zGBD2UPiZwsXBf6Hy0t+du56gQprg=";
-          };
-
-          # The linker tests write cargo-zigbuild's cache to $HOME.
-          preCheck = ''
-            export HOME="$TMPDIR/home"
-          '';
-        }
-      );
+      pkgs.callPackage ./cargo-zigbuild.nix { inherit zig; };
 
   # The Rust target of the machine that runs the build.
   # Builds for it use plain `cargo build`; builds for any other target use cargo-zigbuild.
@@ -109,8 +88,9 @@ in
       description = ''
         The cargo-zigbuild package, which `import` also builds with.
 
-        The default uses the Zig compiler from `languages.zig.package`. It builds cargo-zigbuild 0.24.0
-        when nixpkgs has an older version, which cannot link `cdylib` crates for macOS with Zig 0.16 or later.
+        The default uses the Zig compiler from `languages.zig.package`. It uses the prebuilt
+        cargo-zigbuild 0.24.0 release when nixpkgs has an older version, which cannot link `cdylib`
+        crates for macOS with Zig 0.16 or later.
       '';
     };
 

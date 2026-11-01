@@ -316,7 +316,8 @@ Add each target to `languages.rust.targets`, then build with
 `cargo zigbuild --target aarch64-unknown-linux-musl`.
 
 nixpkgs' cargo-zigbuild cannot link `cdylib` crates for macOS with Zig 0.16 or
-later, so `rust-cross.package` builds cargo-zigbuild 0.24.0 until nixpkgs has it.
+later, so `rust-cross.package` uses the prebuilt cargo-zigbuild 0.24.0 release
+until nixpkgs has it.
 
 `rust-cross.import` builds a Cargo project for one target as a Nix package, for
 devenv [outputs](https://devenv.sh/outputs/). Build one package per target:
