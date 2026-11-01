@@ -1662,6 +1662,40 @@ string
 
 
 
+## services.litellm.permitWeakOrUnsetMasterKey
+
+
+
+Whether to start the proxy without a master key, or with an empty or publicly known one,
+which accepts every request without authentication.
+
+LiteLLM 1.106 and later refuse to start without a master key unless this is set.
+It is on by default for a proxy that only listens on a loopback address.
+Otherwise set a master key in the ` LITELLM_MASTER_KEY ` environment variable.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+` true ` when ` host ` is a loopback address, otherwise ` false `
+
+
+
+*Example:*
+
+```nix
+false
+```
+
+*Declared by:*
+ - [modules/services/litellm.nix](../../modules/services/litellm.nix)
+
+
+
 ## services.litellm.port
 
 

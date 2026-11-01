@@ -38,6 +38,12 @@ in
       message = "The Ollama integration should be disabled when Ollama is disabled.";
     }
     {
+      assertion =
+        config.services.litellm.permitWeakOrUnsetMasterKey
+        && config.processes.litellm.env.LITELLM_DANGEROUSLY_PERMIT_WEAK_OR_UNSET_MASTER_KEY == "true";
+      message = "LiteLLM should start without a master key when it only listens on a loopback address.";
+    }
+    {
       assertion = config.processes.litellm.after == [ ];
       message = "LiteLLM should not depend on Ollama when the integration is disabled.";
     }

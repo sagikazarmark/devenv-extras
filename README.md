@@ -576,6 +576,25 @@ allocated from `services.litellm.port` (default `4000`). The shell exports
 (read by the LiteLLM SDK for `litellm_proxy/` models) pointing at the managed
 server. Telemetry is disabled by default.
 
+LiteLLM 1.106 and later refuse to start without a master key. The proxy listens
+on `127.0.0.1` by default, so `services.litellm.permitWeakOrUnsetMasterKey` lets
+it start without one, accepting every request. On any other `host` the option
+defaults to `false`, and the proxy needs a master key in `LITELLM_MASTER_KEY`.
+Keep it out of `devenv.nix` (the Nix store is world-readable), for example with
+devenv's [dotenv integration](https://devenv.sh/integrations/dotenv/) and a
+`.env` file:
+
+```nix
+dotenv.enable = true;
+
+services.litellm = {
+  enable = true;
+  host = "0.0.0.0";
+};
+```
+
+Clients then authenticate with `Authorization: Bearer <master key>`.
+
 When devenv's [Ollama service](https://devenv.sh/services/ollama/) is enabled as
 well, LiteLLM routes `ollama/<model>` to the managed Ollama server and starts after
 Ollama is ready:

@@ -27,6 +27,14 @@ let
 
   baseUrl = "http://${connectHost}:${toString port}";
 
+  isLoopback =
+    lib.hasPrefix "127." cfg.host
+    || builtins.elem cfg.host [
+      "localhost"
+      "::1"
+      "[::1]"
+    ];
+
   ollamaModels =
     let
       litellmParams = model: {
@@ -80,6 +88,21 @@ in
       default = "${config.devenv.state}/litellm";
       defaultText = lib.literalExpression ''"''${config.devenv.state}/litellm"'';
       description = "The directory LiteLLM stores runtime files (such as the admin UI) in.";
+    };
+
+    permitWeakOrUnsetMasterKey = lib.mkOption {
+      type = lib.types.bool;
+      default = isLoopback;
+      defaultText = lib.literalMD "`true` when `host` is a loopback address, otherwise `false`";
+      example = false;
+      description = ''
+        Whether to start the proxy without a master key, or with an empty or publicly known one,
+        which accepts every request without authentication.
+
+        LiteLLM 1.106 and later refuse to start without a master key unless this is set.
+        It is on by default for a proxy that only listens on a loopback address.
+        Otherwise set a master key in the `LITELLM_MASTER_KEY` environment variable.
+      '';
     };
 
     settings = lib.mkOption {
@@ -202,6 +225,9 @@ in
             SCARF_NO_ANALYTICS = "True";
             DO_NOT_TRACK = "True";
             ANONYMIZED_TELEMETRY = "False";
+          }
+          // lib.optionalAttrs cfg.permitWeakOrUnsetMasterKey {
+            LITELLM_DANGEROUSLY_PERMIT_WEAK_OR_UNSET_MASTER_KEY = "true";
           }
           // cfg.environmentVariables
           // {
