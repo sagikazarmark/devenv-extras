@@ -5,6 +5,7 @@
     ./integrations/browsers.nix
     ./integrations/dagger.nix
     ./integrations/dioxus.nix
+    ./integrations/php-ext-rs
     ./integrations/rust-cross
     ./integrations/vale.nix
     ./integrations/worker-build.nix

@@ -1,0 +1,7 @@
+{
+  "name": "devenv-extras/hello-php",
+  "type": "php-ext",
+  "php-ext": {
+    "extension-name": "hello"
+  }
+}
