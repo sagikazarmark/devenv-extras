@@ -30,6 +30,10 @@
         inherit (packagesFor final) dang;
       };
 
+      overlays.lightpanda-bin = final: _prev: {
+        inherit (packagesFor final) lightpanda-bin;
+      };
+
       overlays.sandbox-agent = final: _prev: {
         inherit (packagesFor final) sandbox-agent;
       };
@@ -72,7 +76,7 @@
           };
         in
         {
-          inherit (self.packages.${system}) dang sandbox-agent;
+          inherit (self.packages.${system}) dang lightpanda-bin sandbox-agent;
         }
         # nixpkgs may not have PHP for every system.
         // lib.optionalAttrs (builtins.tryEval pkgs.php84.drvPath).success {

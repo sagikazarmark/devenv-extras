@@ -629,6 +629,62 @@ tested with one Chrome version, but other recent versions usually work.
 `puppeteer-core` does not read these variables: pass
 `executablePath: process.env.PUPPETEER_EXECUTABLE_PATH` to `launch` yourself.
 
+#### Lightpanda
+
+Add [Lightpanda](https://lightpanda.io/), a headless browser for automation,
+and its server for Puppeteer, Playwright and WebDriver clients:
+
+```nix
+browsers.lightpanda = {
+  enable = true;
+  serve.enable = true;
+};
+```
+
+`browsers.lightpanda.package` defaults to `lightpanda-bin`, the binaries of a
+Lightpanda release for Linux and macOS. Lightpanda's telemetry is turned off
+with `LIGHTPANDA_DISABLE_TELEMETRY`; set
+`browsers.lightpanda.telemetry.enable = true` to keep it.
+
+To build Lightpanda from source instead, with its flake (Linux only), add the
+flake as an input:
+
+```sh
+devenv inputs add lightpanda github:lightpanda-io/browser
+```
+
+```nix
+{ pkgs, inputs, ... }:
+
+{
+  browsers.lightpanda.package = inputs.lightpanda.packages.${pkgs.stdenv.hostPlatform.system}.lightpanda;
+}
+```
+
+The flake builds Lightpanda's main branch, which does not always build with
+Nix; when an update breaks it, pin the input to an earlier commit with
+`github:lightpanda-io/browser/<commit>`.
+
+`lightpanda fetch` works without the server. Lightpanda is not launched by its
+clients but runs as a server that they connect to, so `serve.enable` adds a
+`lightpanda` process that runs `lightpanda serve`. `devenv up` starts it, and so
+does `devenv test`, before the tests run. It listens on `127.0.0.1` at a port
+allocated from 9222; set `browsers.lightpanda.serve.host` and
+`browsers.lightpanda.serve.port` to change them. The shell exports
+`LIGHTPANDA_URL` with its URL:
+
+```js
+// Puppeteer
+const browser = await puppeteer.connect({ browserURL: process.env.LIGHTPANDA_URL });
+// Playwright
+const browser = await chromium.connectOverCDP(process.env.LIGHTPANDA_URL);
+```
+
+It serves the Chrome DevTools Protocol by default. Add `webdriver` to
+`browsers.lightpanda.serve.protocols` for WebDriver BiDi and classic WebDriver
+sessions on the same port, and pass more `lightpanda serve` flags in
+`browsers.lightpanda.serve.extraArgs`.
+
 ### Tailwind CSS
 
 Add the Tailwind CSS CLI and its language server:
