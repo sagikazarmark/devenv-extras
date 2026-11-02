@@ -271,6 +271,255 @@ the ` firefox ` executable of ` package `, in ` Firefox.app ` on macOS
 
 
 
+## browsers.lightpanda.enable
+
+
+
+Whether to enable Lightpanda, a headless browser for automation.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [modules/integrations/browsers.nix](../../modules/integrations/browsers.nix)
+
+
+
+## browsers.lightpanda.package
+
+
+
+The Lightpanda package. Defaults to ` lightpanda-bin `, the binaries of a Lightpanda release.
+To build Lightpanda from source with its flake (Linux only), add the ` lightpanda ` input:
+
+```
+devenv inputs add lightpanda github:lightpanda-io/browser
+```
+
+and set this to ` inputs.lightpanda.packages.${pkgs.stdenv.hostPlatform.system}.lightpanda `.
+
+
+
+*Type:*
+package
+
+
+
+*Default:*
+
+```nix
+pkgs.lightpanda-bin or (pkgs.callPackage ../../packages/lightpanda-bin.nix { })
+```
+
+*Declared by:*
+ - [modules/integrations/browsers.nix](../../modules/integrations/browsers.nix)
+
+
+
+## browsers.lightpanda.serve.enable
+
+
+
+Whether to enable a ` lightpanda ` process that runs ` lightpanda serve `, the CDP and WebDriver server.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [modules/integrations/browsers.nix](../../modules/integrations/browsers.nix)
+
+
+
+## browsers.lightpanda.serve.extraArgs
+
+
+
+More arguments for ` lightpanda serve `.
+
+
+
+*Type:*
+list of string
+
+
+
+*Default:*
+
+```nix
+[ ]
+```
+
+
+
+*Example:*
+
+```nix
+[
+  "--log-level"
+  "info"
+]
+```
+
+*Declared by:*
+ - [modules/integrations/browsers.nix](../../modules/integrations/browsers.nix)
+
+
+
+## browsers.lightpanda.serve.host
+
+
+
+The address the server listens on.
+
+
+
+*Type:*
+string
+
+
+
+*Default:*
+
+```nix
+"127.0.0.1"
+```
+
+*Declared by:*
+ - [modules/integrations/browsers.nix](../../modules/integrations/browsers.nix)
+
+
+
+## browsers.lightpanda.serve.port
+
+
+
+The base port the server listens on.
+The port is allocated from it, and ` config.processes.lightpanda.ports.http.value ` has it.
+
+
+
+*Type:*
+16 bit unsigned integer; between 0 and 65535 (both inclusive)
+
+
+
+*Default:*
+
+```nix
+9222
+```
+
+*Declared by:*
+ - [modules/integrations/browsers.nix](../../modules/integrations/browsers.nix)
+
+
+
+## browsers.lightpanda.serve.protocols
+
+
+
+The automation protocols to serve on the port: ` cdp ` for the Chrome DevTools Protocol, which
+Puppeteer and Playwright use, and ` webdriver ` for WebDriver BiDi and classic WebDriver sessions.
+
+
+
+*Type:*
+non-empty (list of (one of “cdp”, “webdriver”))
+
+
+
+*Default:*
+
+```nix
+[
+  "cdp"
+]
+```
+
+
+
+*Example:*
+
+```nix
+[
+  "cdp"
+  "webdriver"
+]
+```
+
+*Declared by:*
+ - [modules/integrations/browsers.nix](../../modules/integrations/browsers.nix)
+
+
+
+## browsers.lightpanda.telemetry.enable
+
+
+
+Whether to enable Lightpanda’s usage telemetry.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [modules/integrations/browsers.nix](../../modules/integrations/browsers.nix)
+
+
+
 ## browsers.playwright.enable
 
 
@@ -2733,8 +2982,6 @@ The actual port is allocated by devenv and may differ;
 
 ## services.restate.deployments
 
-
-
 Service deployments to register once Restate is ready,
 each with a ` devenv:restate:register-<name> ` task.
 
@@ -2956,6 +3203,8 @@ attribute set of string
 
 
 ## services.restate.host
+
+
 
 The host address the Restate server listens on.
 Wrap IPv6 addresses in brackets.

@@ -117,6 +117,21 @@ let
           Playwright finds browsers by revision, which usually changes only between minor versions.
         ''
     );
+
+  lightpandaPort = config.processes.lightpanda.ports.http.value;
+
+  # Wildcard addresses are fine to bind to, but not to connect to.
+  lightpandaConnectHost =
+    if
+      builtins.elem cfg.lightpanda.serve.host [
+        "0.0.0.0"
+        "::"
+        "[::]"
+      ]
+    then
+      "127.0.0.1"
+    else
+      cfg.lightpanda.serve.host;
 in
 {
   options.browsers = {
@@ -258,6 +273,73 @@ in
         '';
       };
     };
+
+    lightpanda = {
+      enable = lib.mkEnableOption "Lightpanda, a headless browser for automation";
+
+      package = lib.mkOption {
+        type = lib.types.package;
+        default = pkgs.lightpanda-bin or (pkgs.callPackage ../../packages/lightpanda-bin.nix { });
+        defaultText = lib.literalExpression "pkgs.lightpanda-bin or (pkgs.callPackage ../../packages/lightpanda-bin.nix { })";
+        description = ''
+          The Lightpanda package. Defaults to `lightpanda-bin`, the binaries of a Lightpanda release.
+          To build Lightpanda from source with its flake (Linux only), add the `lightpanda` input:
+
+              devenv inputs add lightpanda github:lightpanda-io/browser
+
+          and set this to `inputs.lightpanda.packages.''${pkgs.stdenv.hostPlatform.system}.lightpanda`.
+        '';
+      };
+
+      telemetry.enable = lib.mkEnableOption "Lightpanda's usage telemetry";
+
+      serve = {
+        enable = lib.mkEnableOption "a `lightpanda` process that runs `lightpanda serve`, the CDP and WebDriver server";
+
+        host = lib.mkOption {
+          type = lib.types.str;
+          default = "127.0.0.1";
+          description = "The address the server listens on.";
+        };
+
+        port = lib.mkOption {
+          type = lib.types.port;
+          default = 9222;
+          description = ''
+            The base port the server listens on.
+            The port is allocated from it, and `config.processes.lightpanda.ports.http.value` has it.
+          '';
+        };
+
+        protocols = lib.mkOption {
+          type = lib.types.nonEmptyListOf (
+            lib.types.enum [
+              "cdp"
+              "webdriver"
+            ]
+          );
+          default = [ "cdp" ];
+          example = [
+            "cdp"
+            "webdriver"
+          ];
+          description = ''
+            The automation protocols to serve on the port: `cdp` for the Chrome DevTools Protocol, which
+            Puppeteer and Playwright use, and `webdriver` for WebDriver BiDi and classic WebDriver sessions.
+          '';
+        };
+
+        extraArgs = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
+          default = [ ];
+          example = [
+            "--log-level"
+            "info"
+          ];
+          description = "More arguments for `lightpanda serve`.";
+        };
+      };
+    };
   };
 
   config = lib.mkMerge [
@@ -314,6 +396,47 @@ in
           message = "browsers.puppeteer.browser is ${cfg.puppeteer.browser}, which needs browsers.${cfg.puppeteer.browser}.enable.";
         }
       ];
+    })
+
+    (lib.mkIf cfg.lightpanda.enable {
+      packages = [ cfg.lightpanda.package ];
+
+      # Lightpanda turns telemetry off when the variable is set, whatever its value.
+      env = lib.optionalAttrs (!cfg.lightpanda.telemetry.enable) {
+        LIGHTPANDA_DISABLE_TELEMETRY = "true";
+      };
+    })
+
+    (lib.mkIf (cfg.lightpanda.enable && cfg.lightpanda.serve.enable) {
+      # Puppeteer's browserURL and Playwright's connectOverCDP read the WebSocket URL from /json/version,
+      # and WebDriver clients use it as the server URL.
+      env.LIGHTPANDA_URL = "http://${lightpandaConnectHost}:${toString lightpandaPort}";
+
+      processes.lightpanda = {
+        exec = "exec ${lib.getExe cfg.lightpanda.package} serve ${
+          lib.escapeShellArgs (
+            [
+              "--host"
+              cfg.lightpanda.serve.host
+              "--port"
+              (toString lightpandaPort)
+            ]
+            ++ lib.concatMap (protocol: [
+              "--protocol"
+              protocol
+            ]) cfg.lightpanda.serve.protocols
+            ++ cfg.lightpanda.serve.extraArgs
+          )
+        }";
+
+        ports.http.allocate = cfg.lightpanda.serve.port;
+
+        ready.http.get = {
+          host = lightpandaConnectHost;
+          port = lightpandaPort;
+          path = if lib.elem "cdp" cfg.lightpanda.serve.protocols then "/json/version" else "/status";
+        };
+      };
     })
   ];
 }

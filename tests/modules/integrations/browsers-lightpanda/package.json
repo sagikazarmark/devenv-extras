@@ -1,0 +1,8 @@
+{
+  "name": "browsers-lightpanda",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "puppeteer-core": "25.15.0"
+  }
+}
