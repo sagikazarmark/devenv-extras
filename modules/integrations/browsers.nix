@@ -120,18 +120,24 @@ let
 
   lightpandaPort = config.processes.lightpanda.ports.http.value;
 
+  # Lightpanda only accepts IPv6 addresses without brackets.
+  lightpandaListenHost = lib.removePrefix "[" (lib.removeSuffix "]" cfg.lightpanda.serve.host);
+
   # Wildcard addresses are fine to bind to, but not to connect to.
   lightpandaConnectHost =
-    if
-      builtins.elem cfg.lightpanda.serve.host [
-        "0.0.0.0"
-        "::"
-        "[::]"
-      ]
-    then
+    if lightpandaListenHost == "0.0.0.0" then
       "127.0.0.1"
+    else if lightpandaListenHost == "::" then
+      "::1"
     else
-      cfg.lightpanda.serve.host;
+      lightpandaListenHost;
+
+  # For URLs, which need brackets around IPv6 addresses.
+  lightpandaUrlHost =
+    if lib.hasInfix ":" lightpandaConnectHost then
+      "[${lightpandaConnectHost}]"
+    else
+      lightpandaConnectHost;
 in
 {
   options.browsers = {
@@ -410,14 +416,14 @@ in
     (lib.mkIf (cfg.lightpanda.enable && cfg.lightpanda.serve.enable) {
       # Puppeteer's browserURL and Playwright's connectOverCDP read the WebSocket URL from /json/version,
       # and WebDriver clients use it as the server URL.
-      env.LIGHTPANDA_URL = "http://${lightpandaConnectHost}:${toString lightpandaPort}";
+      env.LIGHTPANDA_URL = "http://${lightpandaUrlHost}:${toString lightpandaPort}";
 
       processes.lightpanda = {
         exec = "exec ${lib.getExe cfg.lightpanda.package} serve ${
           lib.escapeShellArgs (
             [
               "--host"
-              cfg.lightpanda.serve.host
+              lightpandaListenHost
               "--port"
               (toString lightpandaPort)
             ]
@@ -431,8 +437,9 @@ in
 
         ports.http.allocate = cfg.lightpanda.serve.port;
 
+        # devenv puts the host into a URL as it is.
         ready.http.get = {
-          host = lightpandaConnectHost;
+          host = lightpandaUrlHost;
           port = lightpandaPort;
           path = if lib.elem "cdp" cfg.lightpanda.serve.protocols then "/json/version" else "/status";
         };
