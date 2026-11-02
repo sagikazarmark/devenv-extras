@@ -1342,6 +1342,168 @@ pkgs.tailwindcss-language-server
 
 
 
+## php-ext-rs.enable
+
+
+
+Whether to enable development of PHP extensions written in Rust with ext-php-rs.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [modules/integrations/php-ext-rs](../../modules/integrations/php-ext-rs)
+
+
+
+## php-ext-rs.import
+
+
+
+Build a PHP extension written in Rust with [ext-php-rs](https://github.com/extphprs/ext-php-rs)
+for one PHP package and target, for example to use it in ` outputs `.
+
+It takes the path to the project (the directory with Cargo.lock) and an attribute set of
+arguments, and returns a package with the extension in ` lib/php/extensions/<name>.so `, which
+nixpkgs’ ` php.withExtensions ` and ` php.buildEnv ` load. Dependencies are vendored from
+Cargo.lock, so the build runs offline.
+
+The arguments are:
+
+ - ` php ` (required): the PHP package to build against, such as ` pkgs.php84 ` or
+   ` pkgs.php84.override { ztsSupport = true; } `. The extension only loads into a PHP with the
+   same version, thread safety (ZTS) and debug mode. ` config.languages.php.package ` works too,
+   unless the extension is also added to it, which would make the PHP depend on itself.
+ - ` target `: the Rust target to build for. The default is the host target.
+ - ` extensionName `: the name of the extension file. The default is ` php-ext.extension-name ` in
+   composer.json, or the crate name with ` - ` replaced by ` _ `.
+ - ` rustPlatform `: the ` rustPlatform ` to build with, instead of one with the devenv Rust toolchain.
+
+Other arguments, such as ` buildFeatures `, ` cargoBuildFlags ` or ` buildAndTestSubdir ` (by
+default ` php-ext.build-path ` in composer.json), are passed to ` rustPlatform.buildRustPackage `.
+
+A build for the host target uses the devenv Rust toolchain and nixpkgs’ C compiler.
+Builds for other targets cross-compile like ` rust-cross.import `: PHP’s source is configured
+for the target with Zig to get its headers, and the extension is built with cargo-zigbuild.
+They support ` x86_64-unknown-linux-gnu ` and ` aarch64-unknown-linux-gnu ` (with a glibc
+version suffix such as ` .2.17 `), and ` x86_64-apple-darwin ` and ` aarch64-apple-darwin `. The
+devenv Rust toolchain needs the target:
+
+```nix
+languages.rust = {
+  enable = true;
+  channel = "stable";
+  targets = [ "aarch64-unknown-linux-gnu" ];
+};
+
+outputs = {
+  ext = config.php-ext-rs.import ./. { php = pkgs.php84; };
+  ext-aarch64-linux = config.php-ext-rs.import ./. {
+    php = pkgs.php84;
+    target = "aarch64-unknown-linux-gnu.2.17";
+  };
+};
+```
+
+
+
+*Type:*
+function that evaluates to a(n) function that evaluates to a(n) package *(read only)*
+
+
+
+*Default:*
+a function that builds a PHP extension written in Rust
+
+*Declared by:*
+ - [modules/integrations/php-ext-rs](../../modules/integrations/php-ext-rs)
+
+
+
+## php-ext-rs.matrix
+
+
+
+Build a PHP extension written in Rust for every combination of PHP packages, thread safety
+variants and targets, with ` import `.
+
+It returns a directory with ` php-<version>[-zts]/<target>/<name>.so ` for each build, and the
+builds in its ` builds ` attribute. The arguments are:
+
+ - ` phps ` (required): the PHP packages to build against, such as ` [ pkgs.php84 pkgs.php85 ] `.
+ - ` variants `: ` "nts" ` and ` "zts" ` (thread safe) builds of each PHP. The default is ` [ "nts" ] `.
+   A ZTS build for the host target needs PHP built with ZTS, which nixpkgs does not cache.
+ - ` targets `: the Rust targets to build for. The default is the host target.
+
+Other arguments are passed to ` import `:
+
+```nix
+outputs.ext = config.php-ext-rs.matrix ./. {
+  phps = [ pkgs.php84 pkgs.php85 ];
+  variants = [ "nts" "zts" ];
+  targets = [ "x86_64-unknown-linux-gnu" "aarch64-unknown-linux-gnu" "aarch64-apple-darwin" ];
+};
+```
+
+
+
+*Type:*
+function that evaluates to a(n) function that evaluates to a(n) package *(read only)*
+
+
+
+*Default:*
+a function that builds a PHP extension written in Rust for several PHP versions and targets
+
+*Declared by:*
+ - [modules/integrations/php-ext-rs](../../modules/integrations/php-ext-rs)
+
+
+
+## php-ext-rs.php
+
+
+
+The PHP that ` cargo build ` builds extensions against in the shell.
+
+` import ` and ` matrix ` do not use it: they take the PHP to build against as an argument.
+
+
+
+*Type:*
+package
+
+
+
+*Default:*
+
+```nix
+config.languages.php.package
+```
+
+*Declared by:*
+ - [modules/integrations/php-ext-rs](../../modules/integrations/php-ext-rs)
+
+
+
 ## rust-cross.enable
 
 
@@ -2795,8 +2957,6 @@ attribute set of string
 
 ## services.restate.host
 
-
-
 The host address the Restate server listens on.
 Wrap IPv6 addresses in brackets.
 
@@ -3094,6 +3254,8 @@ true
 
 
 ## services.sandbox-agent.cors.allowCredentials
+
+
 
 Whether to allow credentials for CORS
 

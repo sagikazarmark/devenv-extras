@@ -1,5 +1,5 @@
-# Helpers for modules that build a Cargo project with a CLI that runs cargo itself, such as dx, worker-build
-# or cargo-zigbuild.
+# Helpers for modules that build Cargo projects, including with a CLI that runs cargo itself, such as dx,
+# worker-build or cargo-zigbuild.
 {
   pkgs,
   lib,
@@ -19,7 +19,7 @@ let
     };
   '';
 in
-{
+rec {
   inherit rustSnippet;
 
   # Whether the devenv Rust toolchain can build for `target`.
@@ -35,6 +35,72 @@ in
 
         ${rustSnippet wasmTarget}
       '';
+
+  # The `rustPlatform` argument, or one made from the devenv Rust toolchain.
+  # `name` and `target` are for the error message when the devenv Rust toolchain is off.
+  rustPlatformFor =
+    name: target: args:
+    args.rustPlatform or (
+      let
+        toolchain =
+          if !rust.enable then
+            throw ''
+              ${name} needs the devenv Rust toolchain with the ${target} target:
+
+              ${rustSnippet target}
+              or a `rustPlatform` argument.
+            ''
+          else
+            rust.toolchainPackage;
+      in
+      pkgs.makeRustPlatform {
+        cargo = toolchain;
+        rustc = toolchain;
+      }
+    );
+
+  # `buildRustPackage` arguments for the Cargo project at `path`: the name and version of the crate in
+  # `args.buildAndTestSubdir` (or `path`), the source without devenv state and build outputs, and the
+  # dependencies vendored from Cargo.lock.
+  cargoProject =
+    path: args:
+    let
+      readManifest =
+        manifest:
+        if builtins.pathExists manifest then builtins.fromTOML (builtins.readFile manifest) else { };
+
+      cargoToml = readManifest (path + "/${args.buildAndTestSubdir or "."}/Cargo.toml");
+
+      # A workspace member can inherit its version (`version.workspace = true`) from the root manifest.
+      version =
+        let
+          ownVersion = cargoToml.package.version or null;
+        in
+        if builtins.isString ownVersion then
+          ownVersion
+        else
+          (readManifest (path + "/Cargo.toml")).workspace.package.version or "0.0.0";
+    in
+    {
+      pname = cargoToml.package.name or (baseNameOf (toString path));
+      inherit version;
+
+      # Leave out devenv state and build outputs, so importing ./. does not copy them to the store.
+      src = lib.cleanSourceWith {
+        src = path;
+        filter =
+          name: type:
+          lib.cleanSourceFilter name type
+          && !builtins.elem name (
+            map (dir: "${toString path}/${dir}") [
+              ".devenv"
+              ".direnv"
+              "target"
+            ]
+          );
+      };
+      cargoLock.lockFile = path + "/Cargo.lock";
+    };
 
   # Build the Cargo project at `path` with `buildRustPackage`, running `buildCommand` in the crate directory
   # instead of cargo, and `installCommand` to copy its output to `$out`.
@@ -57,61 +123,16 @@ in
     }:
     path: args:
     let
-      toolchain =
-        if !rust.enable then
-          throw ''
-            ${name} needs the devenv Rust toolchain with the ${target} target:
+      rustPlatform = rustPlatformFor name target args;
 
-            ${rustSnippet target}
-            or a `rustPlatform` argument.
-          ''
-        else
-          rust.toolchainPackage;
-
-      rustPlatform =
-        args.rustPlatform or (pkgs.makeRustPlatform {
-          cargo = toolchain;
-          rustc = toolchain;
-        });
-
-      readManifest =
-        manifest:
-        if builtins.pathExists manifest then builtins.fromTOML (builtins.readFile manifest) else { };
-
-      cargoToml = readManifest (path + "/${args.buildAndTestSubdir or "."}/Cargo.toml");
-
-      # A workspace member can inherit its version (`version.workspace = true`) from the root manifest.
-      version =
-        let
-          ownVersion = cargoToml.package.version or null;
-        in
-        if builtins.isString ownVersion then
-          ownVersion
-        else
-          (readManifest (path + "/Cargo.toml")).workspace.package.version or "0.0.0";
+      project = cargoProject path args;
 
       crateDir = lib.escapeShellArg (args.buildAndTestSubdir or ".");
     in
     rustPlatform.buildRustPackage (
-      {
-        pname = (cargoToml.package.name or (baseNameOf (toString path))) + pnameSuffix;
-        inherit version;
-
-        # Leave out devenv state and build outputs, so importing ./. does not copy them to the store.
-        src = lib.cleanSourceWith {
-          src = path;
-          filter =
-            name: type:
-            lib.cleanSourceFilter name type
-            && !builtins.elem name (
-              map (dir: "${toString path}/${dir}") [
-                ".devenv"
-                ".direnv"
-                "target"
-              ]
-            );
-        };
-        cargoLock.lockFile = path + "/Cargo.lock";
+      project
+      // {
+        pname = project.pname + pnameSuffix;
 
         buildPhase = ''
           runHook preBuild

@@ -33,6 +33,7 @@ Then enable the modules you need in `devenv.nix`:
   # browsers.firefox.enable = true;
   # dagger.enable = true;
   # dioxus.enable = true;
+  # php-ext-rs.enable = true;
   # rust-cross.enable = true;
   # worker-build.enable = true;
   # wrangler.enable = true;
@@ -366,6 +367,97 @@ On macOS, builds for macOS targets link against the SDK in
 macOS SDK on Linux, so there only crates that do not link Apple frameworks build
 for macOS. `universal2-apple-darwin` is not supported: build
 `x86_64-apple-darwin` and `aarch64-apple-darwin` separately.
+
+### PHP extensions in Rust
+
+Develop PHP extensions written in Rust with
+[ext-php-rs](https://github.com/extphprs/ext-php-rs):
+
+```nix
+php-ext-rs.enable = true;
+```
+
+`php-ext-rs.enable` enables `languages.rust` and `languages.php` by default, and
+points ext-php-rs at the PHP in `php-ext-rs.php` (by default
+`languages.php.package`) and bindgen at libclang, so `cargo build` builds the
+extension. On macOS it also lets the extension link without PHP's symbols, which
+PHP provides when it loads the extension.
+
+`php-ext-rs.import` builds an extension for one PHP package and target as a Nix
+package, for devenv [outputs](https://devenv.sh/outputs/):
+
+```nix
+{ config, pkgs, ... }:
+
+{
+  languages.rust = {
+    channel = "stable";
+    targets = [ "aarch64-unknown-linux-gnu" ];
+  };
+
+  outputs = {
+    ext = config.php-ext-rs.import ./. { php = pkgs.php84; };
+    ext-aarch64-linux = config.php-ext-rs.import ./. {
+      php = pkgs.php84;
+      target = "aarch64-unknown-linux-gnu.2.17";
+    };
+  };
+}
+```
+
+The package has the extension in `lib/php/extensions/<name>.so`, which nixpkgs'
+`php.withExtensions` loads:
+
+```nix
+languages.php.package = pkgs.php84.withExtensions ({ enabled, ... }: enabled ++ [ config.outputs.ext ]);
+```
+
+`php` is required: an extension only loads into a PHP with the same version,
+thread safety (ZTS) and debug mode, such as `pkgs.php84.override { ztsSupport = true; }`
+for ZTS. Do not build against `languages.php.package` when the extension is also
+added to it.
+
+The name of the extension is `php-ext.extension-name` in `composer.json`, or the
+crate name with `-` replaced by `_`; set it with `extensionName`. A crate in a
+subdirectory is built from `php-ext.build-path` in `composer.json`, or
+`buildAndTestSubdir`. Other arguments go to `rustPlatform.buildRustPackage`.
+
+A build for the host target uses the devenv Rust toolchain and the headers of the
+`php` package. Builds for `x86_64-unknown-linux-gnu`, `aarch64-unknown-linux-gnu`
+(with an optional glibc version suffix), `x86_64-apple-darwin` and
+`aarch64-apple-darwin` cross-compile with `rust-cross.import`, against PHP headers
+from PHP's source configured for the target with Zig, so PHP is not built for the
+target. Add each target to `languages.rust.targets`.
+
+`php-ext-rs.matrix` builds every combination of PHP packages, variants and
+targets, into `php-<version>[-zts]/<target>/<name>.so`:
+
+```nix
+outputs.ext = config.php-ext-rs.matrix ./. {
+  phps = [ pkgs.php84 pkgs.php85 ];
+  variants = [ "nts" "zts" ];
+  targets = [ "x86_64-unknown-linux-gnu" "aarch64-unknown-linux-gnu" "aarch64-apple-darwin" ];
+};
+```
+
+A ZTS build for the host target builds PHP with ZTS, which nixpkgs does not cache;
+ZTS builds for other targets only configure PHP.
+
+Outside devenv, `overlays.php-ext-rs` (and `overlays.default`) adds
+`buildPhpRustExtension`, `rustPlatform.buildRustPackage` with `php` and
+`extensionName` arguments, for the host platform:
+
+```nix
+pkgs.buildPhpRustExtension {
+  php = pkgs.php84;
+  extensionName = "hello";
+  version = "0.1.0";
+  src = ./.;
+  cargoLock.lockFile = ./Cargo.lock;
+}
+```
+
+Its `passthru.tests.load` checks that PHP loads the extension.
 
 ### Wrangler
 

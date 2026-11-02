@@ -79,6 +79,12 @@ let
             visible = false;
           };
 
+          options.languages.php = lib.mkOption {
+            type = lib.types.attrsOf lib.types.anything;
+            default = { };
+            visible = false;
+          };
+
           options.processes = lib.mkOption {
             type = lib.types.attrsOf (
               lib.types.submodule (
