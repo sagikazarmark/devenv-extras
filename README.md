@@ -821,6 +821,44 @@ points at the server itself. Behind the proxy, PHP sees plain HTTP requests with
 your framework to trust the proxy, such as Symfony's `trusted_proxies` or
 Laravel's `TrustProxies` middleware, to generate HTTPS URLs.
 
+#### Testing several PHP versions and modes
+
+To run the same application on several PHP versions, or with and without
+worker mode, define a [profile](https://devenv.sh/profiles/) for each version
+and mode:
+
+```nix
+languages.php.frankenphp = {
+  enable = true;
+  serve = {
+    enable = true;
+    root = "public";
+  };
+};
+
+profiles = {
+  php84.module.languages.php.version = "8.4";
+  php85.module.languages.php.version = "8.5";
+  worker.module.languages.php.frankenphp.serve.worker.file = "public/index.php";
+};
+```
+
+Profiles compose, so each combination is a set of flags rather than another
+profile:
+
+```sh
+devenv --profile php84 up
+devenv --profile php85 --profile worker up
+```
+
+FrankenPHP follows the profile's PHP version, with the extensions and `ini`
+directives of `languages.php`. Each combination of profiles has its own state
+and runtime directories. In CI, run one combination per job of a matrix, such as
+`devenv --profile php84 --profile worker test`: each job then builds only its
+own PHP. A PHP version other than nixpkgs' default is built from source, so
+push the builds to a binary cache, such as with
+[cachix-action](https://github.com/cachix/cachix-action), to build each version once.
+
 ### LiteLLM
 
 Run a [LiteLLM](https://docs.litellm.ai/) proxy with `devenv up`:
