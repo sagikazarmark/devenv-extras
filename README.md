@@ -728,6 +728,12 @@ its default extensions come from the binary cache. The FrankenPHP binary and
 any extensions added with `languages.php.extensions` are built locally.
 Set `languages.php.frankenphp.package` to use another build.
 
+If you set `languages.php.package` yourself, take extensions from the `all`
+argument of its extensions function, including patched ones such as
+`all.redis.overrideAttrs …`: they are then rebuilt for FrankenPHP's PHP. An
+extension built for another PHP, such as one from `pkgs.php.extensions`, fails
+evaluation, because FrankenPHP's PHP could not load it.
+
 To run `frankenphp php-server` with `devenv up`:
 
 ```nix

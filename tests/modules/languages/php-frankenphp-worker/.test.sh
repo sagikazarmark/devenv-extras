@@ -5,6 +5,20 @@ request() {
   curl --silent --show-error --fail "$FRANKENPHP_URL/"
 }
 
+# FrankenPHP loads the patched extension of languages.php.package, built for its PHP.
+ini="$(dirname "$(readlink -f "$(command -v frankenphp)")")/../lib/frankenphp.ini"
+shmop="$(grep -o '/nix/store/[^ ]*/shmop\.so' "$ini")"
+test -e "${shmop%%/lib/*}/fixture-patched"
+
+script="$(mktemp)"
+trap 'rm -f "$script"' EXIT
+printf '<?php echo extension_loaded("shmop") ? "loaded" : "missing";' >"$script"
+output="$(frankenphp php-cli "$script" 2>&1)"
+if [ "$output" != loaded ]; then
+  echo "FrankenPHP should load the patched shmop: $output" >&2
+  exit 1
+fi
+
 # Worker mode: the worker that booted handles the next request too.
 first="$(request)"
 second="$(request)"

@@ -14,6 +14,18 @@ in
     pkgs.jq
   ];
 
+  # A patched extension from `all`: FrankenPHP should load the patched build, for its own PHP.
+  languages.php.package = pkgs.php.buildEnv {
+    extensions =
+      { all, enabled }:
+      enabled
+      ++ [
+        (all.shmop.overrideAttrs (old: {
+          postInstall = (old.postInstall or "") + "\ntouch $out/fixture-patched\n";
+        }))
+      ];
+  };
+
   languages.php.frankenphp = {
     enable = true;
     serve = {

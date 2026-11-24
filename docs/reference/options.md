@@ -1522,6 +1522,10 @@ FrankenPHP needs a thread safe (ZTS) build of PHP with the embed SAPI, which the
 builds from ` languages.php.package `, with its extensions. The FrankenPHP binary is built
 locally, and so are extensions that nixpkgs’ FrankenPHP does not load by default.
 
+Extensions that ` languages.php.package ` takes from the ` all ` argument of its extensions
+function are rebuilt for FrankenPHP’s PHP, with their changes, such as ` overrideAttrs `.
+An extension built for another PHP, such as from ` pkgs.php.extensions `, fails evaluation.
+
 
 
 *Type:*

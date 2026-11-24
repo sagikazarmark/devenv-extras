@@ -9,18 +9,49 @@ let
   php = config.languages.php;
   cfg = php.frankenphp;
 
-  # The extension built for the PHP that `all` belongs to, by its name. The attribute name is the
-  # extension name for all but a few extensions.
-  rebuildExtension =
-    all: extension:
-    all.${extension.extensionName} or (lib.findFirst (
-      candidate: (builtins.tryEval (candidate.extensionName or null)).value == extension.extensionName
-    ) extension (builtins.attrValues all));
+  # An extension of a PHP package set by its name, or null. The attribute name is the extension
+  # name for all but a few extensions.
+  findExtension =
+    extensions: name:
+    extensions.${name}
+      or (lib.findFirst (
+        candidate: (builtins.tryEval (candidate.extensionName or null)).value == name
+      ) null (builtins.attrValues extensions));
+
+  # The PHP that FrankenPHP embeds, which extensions have to be built for.
+  ztsPhp = defaultPackage.php.unwrapped;
 
   # FrankenPHP rebuilds PHP with thread safety (ZTS), which rebuilds the extensions its extension
   # functions take from `all`. devenv's `languages.php.extensions` come from the original PHP
-  # package instead, and a ZTS PHP cannot load them: rebuild every enabled extension for the
-  # PHP being built. The `extraConfig` of the original package is kept by `override`.
+  # package instead, and a ZTS PHP cannot load them.
+  #
+  # Swap the extensions of the original package for their ZTS builds, and keep the others, such
+  # as patched ones built from `all`. Internal and PECL extensions are built with their PHP as a
+  # native build input: one built for another PHP cannot be rebuilt, so it fails evaluation.
+  #
+  # Derivations are compared by their derivation paths: `==` does not compare them by their outputs.
+  rebuildExtension =
+    all: extension:
+    let
+      name = extension.extensionName;
+      original = findExtension php.package.extensions name;
+      builtForOtherPhp = lib.any (
+        input: (input.pname or null) == "php" && input.drvPath != ztsPhp.drvPath
+      ) (extension.nativeBuildInputs or [ ]);
+    in
+    if original != null && extension.drvPath == original.drvPath then
+      lib.defaultTo extension (findExtension all name)
+    else if builtForOtherPhp then
+      throw ''
+        languages.php.frankenphp: the PHP extension ${name} is built for another PHP than the thread
+        safe one FrankenPHP embeds. Take it from the `all` argument of the extensions function of
+        languages.php.package, so that it is rebuilt for FrankenPHP, or set
+        languages.php.frankenphp.package.
+      ''
+    else
+      extension;
+
+  # The `extraConfig` of the original package is kept by `override`.
   frankenphpPhp = php.package.override (args: {
     extensions =
       { all, enabled }:
@@ -28,6 +59,8 @@ let
         (args.extensions or ({ enabled, ... }: enabled)) { inherit all enabled; }
       );
   });
+
+  defaultPackage = pkgs.frankenphp.override { php = frankenphpPhp; };
 
   port = config.processes.frankenphp.ports.http.value;
 
@@ -100,7 +133,7 @@ in
 
     package = lib.mkOption {
       type = lib.types.package;
-      default = pkgs.frankenphp.override { php = frankenphpPhp; };
+      default = defaultPackage;
       defaultText = lib.literalMD "`pkgs.frankenphp`, built with `languages.php.package`";
       description = ''
         The FrankenPHP package. FrankenPHP embeds PHP, so by default it is built with
@@ -109,6 +142,10 @@ in
         FrankenPHP needs a thread safe (ZTS) build of PHP with the embed SAPI, which the package
         builds from `languages.php.package`, with its extensions. The FrankenPHP binary is built
         locally, and so are extensions that nixpkgs' FrankenPHP does not load by default.
+
+        Extensions that `languages.php.package` takes from the `all` argument of its extensions
+        function are rebuilt for FrankenPHP's PHP, with their changes, such as `overrideAttrs`.
+        An extension built for another PHP, such as from `pkgs.php.extensions`, fails evaluation.
       '';
     };
 
