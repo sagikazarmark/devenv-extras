@@ -14,11 +14,12 @@
       message = "Without a Cargo.lock, worker-build.version should default to null.";
     }
     {
-      assertion = config.worker-build.package == pkgs.worker-build;
+      # The module adds zstd to worker-build 0.8.7 when nixpkgs does not have it.
+      assertion = config.worker-build.package.name == pkgs.worker-build.name;
       message = "worker-build.package should default to pkgs.worker-build.";
     }
     {
-      assertion = builtins.elem pkgs.worker-build config.packages;
+      assertion = builtins.elem config.worker-build.package config.packages;
       message = "worker-build.enable should install worker-build.";
     }
     {

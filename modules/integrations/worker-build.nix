@@ -19,6 +19,21 @@ let
   };
 
   rust = import ../lib/rust.nix { inherit pkgs lib config; };
+
+  # worker-build 0.8.7 needs zstd, which nixpkgs only added on 2026-11-14 (NixOS/nixpkgs@70c0b81):
+  # without it, its zstd-sys build script fails. Add it to packages that do not have it, so that
+  # the ones that do, and their binary cache builds, stay as they are.
+  withZstd =
+    package:
+    if
+      lib.versionAtLeast package.version "0.8.7"
+      && !lib.any (input: (input.pname or null) == "zstd") (package.buildInputs or [ ])
+    then
+      package.overrideAttrs (old: {
+        buildInputs = (old.buildInputs or [ ]) ++ [ pkgs.zstd ];
+      })
+    else
+      package;
 in
 {
   options.worker-build = {
@@ -42,7 +57,7 @@ in
 
     package = lib.mkOption {
       type = lib.types.package;
-      default = versions.versioned "worker-build" cfg.version;
+      default = withZstd (versions.versioned "worker-build" cfg.version);
       defaultText = lib.literalMD "`worker-build` at `version`, or `pkgs.worker-build`";
       description = "The worker-build package. Setting it overrides `version`.";
     };
