@@ -30,6 +30,7 @@ Then enable the modules you need in `devenv.nix`:
 {
   languages.dang.enable = true;
   # languages.tailwindcss.enable = true;
+  # languages.php.frankenphp.enable = true;
   # browsers.firefox.enable = true;
   # dagger.enable = true;
   # dioxus.enable = true;
@@ -697,6 +698,128 @@ The CLI defaults to `pkgs.tailwindcss_4`; override `languages.tailwindcss.packag
 to use a different version. Disable the language server with
 `languages.tailwindcss.lsp.enable = false`, or choose another one with
 `languages.tailwindcss.lsp.package`.
+
+### FrankenPHP
+
+Add [FrankenPHP](https://frankenphp.dev/), the PHP app server built on Caddy, to
+devenv's PHP support:
+
+```nix
+languages.php.frankenphp.enable = true;
+```
+
+This enables `languages.php` by default. FrankenPHP embeds PHP, so it is built
+with `languages.php.package` and loads the same extensions and `ini` directives
+as the `php` CLI:
+
+```nix
+languages.php = {
+  extensions = [ "redis" ];
+  ini = ''
+    memory_limit = 512M
+  '';
+  frankenphp.enable = true;
+};
+```
+
+FrankenPHP needs a thread safe (ZTS) PHP with the embed SAPI, built from
+`languages.php.package` with its extensions. The ZTS PHP of nixpkgs' FrankenPHP and
+its default extensions come from the binary cache. The FrankenPHP binary and
+any extensions added with `languages.php.extensions` are built locally.
+Set `languages.php.frankenphp.package` to use another build.
+
+To run `frankenphp php-server` with `devenv up`:
+
+```nix
+languages.php.frankenphp = {
+  enable = true;
+  serve = {
+    enable = true;
+    root = "public";
+    ini = ''
+      display_errors = On
+    '';
+  };
+};
+```
+
+The server listens over HTTP on `127.0.0.1` (`languages.php.frankenphp.serve.host`),
+on a port allocated from `languages.php.frankenphp.serve.port` (default `8000`);
+`config.processes.frankenphp.ports.http.value` has it, and the shell exports its
+URL as `FRANKENPHP_URL`, such as `http://127.0.0.1:8000`. The document root is
+relative to the devenv root and defaults to it. Caddy's state is kept in
+`.devenv/state/frankenphp`.
+
+`serve.ini` holds `php.ini` directives for the server only, like
+`languages.php.fpm.phpOptions` for PHP-FPM. They are loaded after
+`languages.php.ini`, so they override it, and changing them does not rebuild
+FrankenPHP.
+
+To run the application in [worker mode](https://frankenphp.dev/docs/worker/),
+set the worker script:
+
+```nix
+languages.php.frankenphp.serve.worker.file = "public/index.php";
+```
+
+A worker keeps the code it booted with, so the workers restart when files
+matching `serve.worker.watch` change. The default is FrankenPHP's pattern,
+`./**/*.{env,php,twig,yaml,yml}`; set it to `[ ]` to disable watching.
+`serve.worker.count` sets the number of workers, two per CPU by default.
+
+Paths are strings relative to the devenv root, not Nix paths: a Nix path is
+copied to the Nix store, so the server would run and watch that copy instead of
+your files. Pass more `frankenphp php-server` flags in `serve.extraArgs`.
+
+#### Caddyfile
+
+For configuration that `php-server` has no flags for, such as `index`, thread
+limits or several sites, run a Caddyfile with `frankenphp run` instead:
+
+```nix
+languages.php.frankenphp.serve = {
+  enable = true;
+  root = "public";
+  caddyfile = "Caddyfile";
+};
+```
+
+devenv restarts the server when the Caddyfile changes; add more files to restart
+for, such as imported ones, to `processes.frankenphp.watch.paths`. A Caddyfile in
+the Nix store is not watched. The process sets the variables that
+[FrankenPHP's Caddyfile](https://github.com/php/frankenphp/blob/main/caddy/frankenphp/Caddyfile)
+reads, so that file works unchanged:
+
+- `SERVER_NAME` is `http://:<port>`, a site on the allocated port for any host.
+- `SERVER_ROOT` is `serve.root`.
+- `CADDY_GLOBAL_OPTIONS` is `default_bind <serve.host>`.
+
+Serve `{$SERVER_NAME}` in your own Caddyfile too, so that `FRANKENPHP_URL` and
+the readiness check reach it. Override these variables, or set others such as
+`FRANKENPHP_CONFIG`, in `processes.frankenphp.env`. Configure workers in the
+Caddyfile: `serve.worker` only applies to `php-server`.
+
+Caddy's admin API listens on a Unix socket, `$DEVENV_RUNTIME/frankenphp-admin.sock`,
+instead of port 2019, so several projects can run at once. Reach it with
+`curl --unix-socket "$DEVENV_RUNTIME/frankenphp-admin.sock" http://localhost/config/`.
+
+#### HTTPS and `.localhost` URLs
+
+devenv's [process proxy](https://devenv.sh/processes/#friendly-localhost-urls)
+gives the server a stable URL, `http://frankenphp.<project>.localhost`, whatever
+port it gets. It also serves HTTPS with a local mkcert certificate authority:
+
+```nix
+process.proxy.enable = true;
+processes.frankenphp.proxy.https.enable = true;
+```
+
+Use the proxy rather than FrankenPHP's `--domain` flag, which switches the server
+to port 443 and to Caddy's own certificate authority. `FRANKENPHP_URL` still
+points at the server itself. Behind the proxy, PHP sees plain HTTP requests with
+`X-Forwarded-Proto`, `X-Forwarded-Host` and `X-Forwarded-For` headers: configure
+your framework to trust the proxy, such as Symfony's `trusted_proxies` or
+Laravel's `TrustProxies` middleware, to generate HTTPS URLs.
 
 ### LiteLLM
 

@@ -79,10 +79,19 @@ let
             visible = false;
           };
 
-          options.languages.php = lib.mkOption {
-            type = lib.types.attrsOf lib.types.anything;
-            default = { };
-            visible = false;
+          # Stubs of devenv's own options: devenv-extras declares options under languages.php.
+          options.languages.php = {
+            enable = lib.mkOption {
+              type = lib.types.bool;
+              default = false;
+              visible = false;
+            };
+
+            package = lib.mkOption {
+              type = lib.types.package;
+              default = pkgs.php;
+              visible = false;
+            };
           };
 
           options.processes = lib.mkOption {

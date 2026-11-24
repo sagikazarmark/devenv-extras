@@ -1479,6 +1479,387 @@ pkgs.dang or (pkgs.callPackage ./package.nix { })
 
 
 
+## languages.php.frankenphp.enable
+
+
+
+Whether to enable FrankenPHP, the PHP app server built on Caddy.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [modules/languages/php/frankenphp.nix](../../modules/languages/php/frankenphp.nix)
+
+
+
+## languages.php.frankenphp.package
+
+
+
+The FrankenPHP package. FrankenPHP embeds PHP, so by default it is built with
+` languages.php.package `: it loads the same extensions and ` php.ini ` directives.
+
+FrankenPHP needs a thread safe (ZTS) build of PHP with the embed SAPI, which the package
+builds from ` languages.php.package `, with its extensions. The FrankenPHP binary is built
+locally, and so are extensions that nixpkgs’ FrankenPHP does not load by default.
+
+
+
+*Type:*
+package
+
+
+
+*Default:*
+` pkgs.frankenphp `, built with ` languages.php.package `
+
+*Declared by:*
+ - [modules/languages/php/frankenphp.nix](../../modules/languages/php/frankenphp.nix)
+
+
+
+## languages.php.frankenphp.serve.enable
+
+
+
+Whether to enable a ` frankenphp ` process that runs ` frankenphp php-server `.
+
+
+
+*Type:*
+boolean
+
+
+
+*Default:*
+
+```nix
+false
+```
+
+
+
+*Example:*
+
+```nix
+true
+```
+
+*Declared by:*
+ - [modules/languages/php/frankenphp.nix](../../modules/languages/php/frankenphp.nix)
+
+
+
+## languages.php.frankenphp.serve.caddyfile
+
+
+
+A Caddyfile to run with ` frankenphp run ` instead of ` frankenphp php-server `, relative to
+the devenv root. devenv restarts the server when it changes, unless it is in the Nix store.
+
+The process sets the environment variables that
+[FrankenPHP’s Caddyfile](https://github.com/php/frankenphp/blob/main/caddy/frankenphp/Caddyfile)
+reads, so it works as it is: ` SERVER_NAME ` (` http://:<port> `, for any host), ` SERVER_ROOT `
+(` root `), and ` CADDY_GLOBAL_OPTIONS ` (` default_bind <host> `). Your own Caddyfile should
+serve ` {$SERVER_NAME} ` too, for ` FRANKENPHP_URL ` and the readiness check. Override these in
+` processes.frankenphp.env `, which also sets variables such as ` FRANKENPHP_CONFIG `.
+
+Caddy’s admin API listens on a Unix socket, ` CADDY_ADMIN `. Configure workers in the
+Caddyfile, not with ` worker `.
+
+
+
+*Type:*
+null or string
+
+
+
+*Default:*
+
+```nix
+null
+```
+
+
+
+*Example:*
+
+```nix
+"Caddyfile"
+```
+
+*Declared by:*
+ - [modules/languages/php/frankenphp.nix](../../modules/languages/php/frankenphp.nix)
+
+
+
+## languages.php.frankenphp.serve.extraArgs
+
+
+
+More arguments for ` frankenphp php-server `, or ` frankenphp run ` with ` caddyfile `.
+
+
+
+*Type:*
+list of string
+
+
+
+*Default:*
+
+```nix
+[ ]
+```
+
+
+
+*Example:*
+
+```nix
+[
+  "--access-log"
+]
+```
+
+*Declared by:*
+ - [modules/languages/php/frankenphp.nix](../../modules/languages/php/frankenphp.nix)
+
+
+
+## languages.php.frankenphp.serve.host
+
+
+
+The address the server listens on.
+
+
+
+*Type:*
+string
+
+
+
+*Default:*
+
+```nix
+"127.0.0.1"
+```
+
+*Declared by:*
+ - [modules/languages/php/frankenphp.nix](../../modules/languages/php/frankenphp.nix)
+
+
+
+## languages.php.frankenphp.serve.ini
+
+
+
+` php.ini ` directives for the server only, after those of ` languages.php.ini `, like
+` languages.php.fpm.phpOptions ` for PHP-FPM. They do not rebuild FrankenPHP.
+
+
+
+*Type:*
+strings concatenated with “\\n”
+
+
+
+*Default:*
+
+```nix
+""
+```
+
+
+
+*Example:*
+
+```nix
+''
+  display_errors = On
+  opcache.validate_timestamps = 1
+''
+```
+
+*Declared by:*
+ - [modules/languages/php/frankenphp.nix](../../modules/languages/php/frankenphp.nix)
+
+
+
+## languages.php.frankenphp.serve.port
+
+
+
+The base port the server listens on, over HTTP.
+The port is allocated from it, and ` config.processes.frankenphp.ports.http.value ` has it.
+
+
+
+*Type:*
+16 bit unsigned integer; between 0 and 65535 (both inclusive)
+
+
+
+*Default:*
+
+```nix
+8000
+```
+
+*Declared by:*
+ - [modules/languages/php/frankenphp.nix](../../modules/languages/php/frankenphp.nix)
+
+
+
+## languages.php.frankenphp.serve.root
+
+
+
+The document root, relative to the devenv root.
+
+
+
+*Type:*
+string
+
+
+
+*Default:*
+
+```nix
+"."
+```
+
+
+
+*Example:*
+
+```nix
+"public"
+```
+
+*Declared by:*
+ - [modules/languages/php/frankenphp.nix](../../modules/languages/php/frankenphp.nix)
+
+
+
+## languages.php.frankenphp.serve.worker.count
+
+
+
+The number of workers to start. When null, FrankenPHP starts two per CPU.
+
+
+
+*Type:*
+null or (positive integer, meaning >0)
+
+
+
+*Default:*
+
+```nix
+null
+```
+
+*Declared by:*
+ - [modules/languages/php/frankenphp.nix](../../modules/languages/php/frankenphp.nix)
+
+
+
+## languages.php.frankenphp.serve.worker.file
+
+
+
+The worker script, relative to the devenv root. When set, the server runs in
+[worker mode](https://frankenphp.dev/docs/worker/): the script boots the application
+once and handles requests in a loop with ` frankenphp_handle_request() `.
+
+
+
+*Type:*
+null or string
+
+
+
+*Default:*
+
+```nix
+null
+```
+
+
+
+*Example:*
+
+```nix
+"public/index.php"
+```
+
+*Declared by:*
+ - [modules/languages/php/frankenphp.nix](../../modules/languages/php/frankenphp.nix)
+
+
+
+## languages.php.frankenphp.serve.worker.watch
+
+
+
+Glob patterns of files that restart the workers when they change, relative to the devenv
+root. A worker keeps the code it booted with, so the default is FrankenPHP’s pattern for
+` --watch `. Set to ` [ ] ` to disable watching.
+
+
+
+*Type:*
+list of string
+
+
+
+*Default:*
+
+```nix
+[
+  "./**/*.{env,php,twig,yaml,yml}"
+]
+```
+
+
+
+*Example:*
+
+```nix
+[
+  "./src/**/*.php"
+  "./config/**/*.yaml"
+]
+```
+
+*Declared by:*
+ - [modules/languages/php/frankenphp.nix](../../modules/languages/php/frankenphp.nix)
+
+
+
 ## languages.tailwindcss.enable
 
 
@@ -2619,8 +3000,6 @@ string
 
 ## services.openbao.initialize.\*.requests.\*.path
 
-
-
 The API path of the request, without the ` /v1/ ` prefix.
 
 
@@ -2981,6 +3360,8 @@ The actual port is allocated by devenv and may differ;
 
 
 ## services.restate.deployments
+
+
 
 Service deployments to register once Restate is ready,
 each with a ` devenv:restate:register-<name> ` task.
