@@ -26,8 +26,9 @@ let
   # package instead, and a ZTS PHP cannot load them.
   #
   # Swap the extensions of the original package for their ZTS builds, and keep the others, such
-  # as patched ones built from `all`. Internal and PECL extensions are built with their PHP as a
-  # native build input: one built for another PHP cannot be rebuilt, so it fails evaluation.
+  # as patched ones built from `all`. An extension built for another PHP cannot be rebuilt, so it
+  # fails evaluation. Internal and PECL extensions are built with their PHP as a native build
+  # input, and php-ext-rs extensions have theirs in `php`. Prebuilt extensions have neither.
   #
   # Derivations are compared by their derivation paths: `==` does not compare them by their outputs.
   rebuildExtension =
@@ -35,9 +36,10 @@ let
     let
       name = extension.extensionName;
       original = findExtension php.package.extensions name;
-      builtForOtherPhp = lib.any (
-        input: (input.pname or null) == "php" && input.drvPath != ztsPhp.drvPath
-      ) (extension.nativeBuildInputs or [ ]);
+      builtFor =
+        lib.filter (input: (input.pname or null) == "php") (extension.nativeBuildInputs or [ ])
+        ++ lib.optional (extension ? php) (extension.php.unwrapped or extension.php);
+      builtForOtherPhp = lib.any (builtPhp: builtPhp.drvPath != ztsPhp.drvPath) builtFor;
     in
     if original != null && extension.drvPath == original.drvPath then
       lib.defaultTo extension (findExtension all name)
