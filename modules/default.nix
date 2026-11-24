@@ -1,6 +1,7 @@
 {
   imports = [
     ./languages/dang
+    ./languages/php/frankenphp.nix
     ./languages/tailwindcss
     ./integrations/browsers.nix
     ./integrations/dagger.nix
